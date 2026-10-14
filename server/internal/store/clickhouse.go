@@ -126,9 +126,13 @@ func (s *ClickHouseStore) QueryEvents(
 		return nil, fmt.Errorf("clickhouse connection unavailable")
 	}
 
-	lim := "200"
+	lim := "1000"
 	if limit != "" {
-		lim = limit
+		if limit == "all" || limit == "0" || limit == "unlimited" {
+			lim = "50000"
+		} else {
+			lim = limit
+		}
 	}
 
 	where := "1=1"
