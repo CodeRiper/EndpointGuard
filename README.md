@@ -1,9 +1,21 @@
-# EndpointGuard — Unified EDR/RMM/DLP Agent + Control Server
+<div align="center">
 
-One Rust agent (no browser extension — it collects everything itself) and
-one Go control server, the same binary on **Windows and Linux**, with a
-username/password dashboard login and a 5-channel mTLS tunnel that never
-puts an IP address on the wire.
+# 🛡️ EndpointGuard
+
+**Unified High-Performance EDR, RMM & DLP Platform with Zero-Config mTLS Reverse Tunnels**
+
+[![CI Build & Verify](https://github.com/CodeRiper/EndpointGuard/actions/workflows/ci.yml/badge.svg)](https://github.com/CodeRiper/EndpointGuard/actions/workflows/ci.yml)
+[![Go Version](https://img.shields.io/badge/Go-1.22+-00ADD8?style=flat&logo=go)](https://golang.org)
+[![Rust Version](https://img.shields.io/badge/Rust-1.78+-orange?style=flat&logo=rust)](https://www.rust-lang.org)
+[![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20Linux-blue?style=flat&logo=windows)](https://github.com/CodeRiper/EndpointGuard)
+[![mTLS Tunnel](https://img.shields.io/badge/Tunnel-5--Channel%20mTLS-green?style=flat&logo=lock)](https://github.com/CodeRiper/EndpointGuard)
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
+
+---
+
+One lightweight Rust agent (no browser extension required) and one Go control server (compiled for both **Windows and Linux**) with a responsive live web console, real-time telemetry (ClickHouse), PostgreSQL fleet registry, and a 5-channel multiplexed mTLS reverse tunnel that never exposes an IP address on the wire.
+
+</div>
 
 ---
 

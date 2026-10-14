@@ -1,0 +1,72 @@
+name: Release Packages
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-server:
+    name: Build Control Server (Linux & Windows)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+          cache-dependency-path: server/go.sum
+
+      - name: Build Linux Binary
+        run: |
+          cd server
+          GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -ldflags="-s -w" -o ../dist/eg-server-linux ./cmd/server
+
+      - name: Build Windows Binary
+        run: |
+          cd server
+          GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -ldflags="-s -w" -o ../dist/eg-server.exe ./cmd/server
+
+      - name: Package Server Artifacts
+        run: |
+          mkdir -p dist
+          tar -czf dist/eg-server-linux-x64.tar.gz -C dist eg-server-linux
+          cd dist && zip eg-server-windows-x64.zip eg-server.exe && cd ..
+
+      - name: Upload Server Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: server-packages
+          path: |
+            dist/eg-server-linux-x64.tar.gz
+            dist/eg-server-windows-x64.zip
+
+  create-release:
+    name: Publish GitHub Release
+    needs: [build-server]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            artifacts/server-packages/eg-server-linux-x64.tar.gz
+            artifacts/server-packages/eg-server-windows-x64.zip
+          draft: false
+          prerelease: false
+          generate_release_notes: true
