@@ -99,7 +99,7 @@ func Load() Config {
 	httpPort := fs.String("http-port", "", "HTTP dashboard port, e.g. 8080")
 	grpcPort := fs.String("grpc-port", "", "gRPC agent tunnel port, e.g. 4443")
 	storageDir := fs.String("storage-dir", "", "Directory path for persistent logs and data")
-	retentionDays := fs.Int("retention-days", 30, "Log retention in days (0 for unlimited)")
+	retentionDays := fs.Int("retention-days", 90, "Log retention in days (default 90)")
 	listenAddr := fs.String("grpc-addr", "", "gRPC listen address override, e.g. :4443")
 	httpAddr := fs.String("http-addr", "", "REST API listen address override, e.g. :8080")
 	tlsCert := fs.String("tls-cert", "", "Server TLS cert path")
@@ -131,7 +131,7 @@ func Load() Config {
 		HTTPPort:         "8080",
 		GRPCPort:         "4443",
 		StorageDir:       DefaultStoragePath(),
-		LogRetentionDays: 30,
+		LogRetentionDays: 90,
 		ClickHouseDSN:    "clickhouse://localhost:9000/endpointguard",
 		PostgresDSN:      "postgres://eg:eg@localhost:5432/endpointguard",
 		TLSCertFile:      "certs/server.crt",
@@ -189,7 +189,7 @@ func Load() Config {
 	if *storageDir != "" {
 		cfg.StorageDir = *storageDir
 	}
-	if *retentionDays != 30 || cfg.LogRetentionDays == 0 {
+	if *retentionDays != 90 || cfg.LogRetentionDays == 0 {
 		cfg.LogRetentionDays = *retentionDays
 	}
 	if *adminPass != "" {

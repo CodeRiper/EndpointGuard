@@ -596,7 +596,11 @@
 
     <!-- TOP HEADER -->
     <header style="background: var(--card); border-bottom: 1px solid var(--line); padding: 12px 36px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 40; transition: background 0.2s ease;">
-      <div style="display: flex; align-items: center; gap: 14px; flex-wrap: wrap;">
+      <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+        <span id="header-https-pill" class="pill pill-success" style="font-size: 12px; cursor: pointer;" onclick="checkHttpsUpgrade()" title="Check HTTPS Encryption Status">
+          <span class="dot online"></span>
+          🔒 OpenSSL TLS 1.3 Active
+        </span>
         <span class="pill pill-success" style="font-size: 12px;">
           <span class="dot online"></span>
           mTLS Port 443 Tunnel Active
@@ -605,7 +609,7 @@
           Pinned CA: <strong style="color: var(--ink);">c0543a2e…</strong>
         </span>
         <span class="pill pill-muted" style="font-size: 11px;">
-          Zero-Config P2P Reverse Tunnel (Home to Office - No VPN Required)
+          Zero-Config P2P Reverse Tunnel (No VPN Required)
         </span>
       </div>
       <div style="display: flex; align-items: center; gap: 10px;">
@@ -854,16 +858,27 @@
         </nav>
       </div>
 
-      <!-- UNIVERSAL CONNECTED MACHINE SELECTOR LINE (Allows 1-click connect to any machine) -->
-      <div class="card" style="padding: 12px 18px; display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap;">
-        <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
-          <span style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--muted);">Switch Connected Machine:</span>
-          <div id="machine-selector-chips" style="display: flex; gap: 8px; flex-wrap: wrap;">
-            <!-- Populated dynamically: LD-KLM-LAP015, CORP-WIN11-ENG02, WIN-SRV-DC01, MKT-LAPTOP-04 -->
+      <!-- ENDPOINTS CARD SELECTOR STRIP (Inventory-Style Cards Grid) -->
+      <div class="card" style="padding: 16px 20px; display: flex; flex-direction: column; gap: 12px; border: 1px solid var(--line);">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 18px;">🖥️</span>
+            <div>
+              <strong style="font-size: 14px; font-weight: 700; color: var(--ink);">Fleet Endpoints Quick Switcher</strong>
+              <span style="font-size: 12px; color: var(--muted); margin-left: 8px;">Select an endpoint card below to focus telemetry, or select All Fleet</span>
+            </div>
+          </div>
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <span class="pill pill-success mono" id="fleet-card-switcher-pill" style="font-size: 11.5px;">
+              <span class="dot online"></span> 1 Online / 1 Total
+            </span>
+            <span style="font-size: 11px; color: var(--muted);" class="mono">Worldwide mTLS Reverse Tunnel</span>
           </div>
         </div>
-        <div style="display: flex; align-items: center; gap: 8px; font-size: 11.5px; color: var(--muted);" class="mono">
-          <span class="dot online"></span> Reverse Tunnel Active
+
+        <!-- Dynamic Grid of Inventory-Style Endpoint Cards -->
+        <div id="fleet-card-switcher-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; width: 100%;">
+          <!-- Populated dynamically via renderFleetCardGrid(agentsList) -->
         </div>
       </div>
 
@@ -935,11 +950,8 @@
         <button class="tab" id="tab-btn-terminal" onclick="setDetailTab('terminal')">Terminal (ConPTY)</button>
       </nav>
 
-      <!-- 2-COLUMN DETAIL LAYOUT WITH RIGHT-HAND FLEET ENDPOINTS PANEL -->
-      <div style="display: flex; gap: 22px; align-items: flex-start; width: 100%;">
-        
-        <!-- LEFT COLUMN: Main Tab Content -->
-        <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 18px;">
+      <!-- MAIN DETAIL CONTENT (100% FULL WIDTH - SPACIOUS & RESPONSIVE) -->
+      <div style="width: 100%; display: flex; flex-direction: column; gap: 18px;">
 
           <!-- TAB 1: OVERVIEW -->
       <div id="tab-content-overview" style="display: flex; flex-direction: column; gap: 18px;">
@@ -1081,6 +1093,30 @@
                 </tr>
               </tbody>
             </table>
+          </div>
+
+          <!-- Pagination and Records Controls Toolbar -->
+          <div style="padding: 12px 20px; border-top: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; background: var(--card-inner);">
+            <div style="display: flex; align-items: center; gap: 10px; font-size: 12px; color: var(--muted);" class="mono">
+              <span id="browser-pagination-range">Showing 1–25 of 100 events</span>
+              <span style="color: var(--line);">|</span>
+              <span>Rows per page:</span>
+              <select id="browser-page-size-select" onchange="setBrowserPageSize(this.value)" style="padding: 3px 8px; border-radius: 6px; border: 1px solid var(--line); background: var(--card); color: var(--ink); font-size: 12px; outline: none;">
+                <option value="10">10</option>
+                <option value="25" selected>25</option>
+                <option value="50">50</option>
+                <option value="100">100</option>
+                <option value="all">All Logs</option>
+              </select>
+            </div>
+
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <button class="btn btn-sm" id="btn-browser-first" onclick="setBrowserPage(1)" title="First Page">⏮ First</button>
+              <button class="btn btn-sm" id="btn-browser-prev" onclick="prevBrowserPage()" title="Previous Page">◀ Prev</button>
+              <span id="browser-page-display" class="mono" style="font-size: 12px; padding: 0 8px; color: var(--ink); font-weight: 600;">Page 1 of 1</span>
+              <button class="btn btn-sm" id="btn-browser-next" onclick="nextBrowserPage()" title="Next Page">Next ▶</button>
+              <button class="btn btn-sm" id="btn-browser-last" onclick="lastBrowserPage()" title="Last Page">Last ⏭</button>
+            </div>
           </div>
         </div>
       </div>
@@ -1596,44 +1632,7 @@
         </div>
       </div>
 
-        </div><!-- END LEFT COLUMN -->
-
-        <!-- RIGHT COLUMN: Fleet Endpoints Selector (Inventory Style) -->
-        <div id="fleet-side-panel" class="card" style="width: 310px; flex-shrink: 0; padding: 16px; display: flex; flex-direction: column; gap: 12px; position: sticky; top: 75px; max-height: calc(100vh - 95px); overflow-y: auto;">
-          <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--line); padding-bottom: 10px;">
-            <div>
-              <div style="font: 700 12.5px 'Space Grotesk', sans-serif; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink); display: flex; align-items: center; gap: 6px;">
-                <span>🖥️</span> Connected Fleet
-              </div>
-              <div style="font-size: 11px; color: var(--muted); margin-top: 1px;">Switch machine or view all</div>
-            </div>
-            <span id="side-panel-online-count" class="pill pill-success" style="font-size: 10.5px;">1 Online</span>
-          </div>
-
-          <!-- All Fleet (Combined Telemetry) Card -->
-          <div id="side-card-all-fleet" class="card fleet-side-card active" onclick="selectAllEndpoints();" style="padding: 12px 14px; cursor: pointer; border: 1.5px solid var(--accent); background: var(--card-inner); border-radius: 8px; transition: all 0.2s ease;">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-              <div style="display: flex; align-items: center; gap: 8px;">
-                <span style="font-size: 17px;">🌐</span>
-                <div>
-                  <strong style="font-size: 13px; color: var(--accent);">All Fleet (Combined)</strong>
-                  <div style="font-size: 10.5px; color: var(--muted);" class="mono">Simultaneous Telemetry</div>
-                </div>
-              </div>
-              <span class="pill pill-primary" style="font-size: 9.5px; font-weight: 700;">ALL</span>
-            </div>
-            <div style="font-size: 11px; color: var(--muted); margin-top: 6px; line-height: 1.35;">
-              View aggregated logs across all connected host endpoints simultaneously.
-            </div>
-          </div>
-
-          <!-- Dynamic Individual Machine Cards -->
-          <div id="side-panel-machine-list" style="display: flex; flex-direction: column; gap: 10px;">
-            <!-- Populated dynamically via renderSidePanelEndpoints() -->
-          </div>
-        </div><!-- END RIGHT COLUMN -->
-
-      </div><!-- END 2-COLUMN DETAIL LAYOUT -->
+        </div><!-- END MAIN DETAIL CONTENT -->
 
     </main>
 
@@ -1867,18 +1866,92 @@
         </div>
 
         <!-- 4. Data Retention Policy -->
+                <!-- 4. Data Retention Policy (Default 90 Days) -->
         <div style="background: var(--card-inner); border: 1px solid var(--line); border-radius: 12px; padding: 16px;">
-          <div style="font-weight: 600; font-size: 14px; margin-bottom: 6px;">⏱️ Automated Log Retention Policy</div>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <div style="font-weight: 600; font-size: 14px;">⏱️ Automated Log Retention Policy</div>
+            <span class="pill pill-success mono" style="font-size: 10.5px;">Default: 90 Days</span>
+          </div>
+          <div style="font-size: 12px; color: var(--muted); margin-bottom: 10px;">
+            Controls ClickHouse automated rolling partition expiration. Logs older than this threshold are safely purged.
+          </div>
           <div style="display: flex; gap: 10px; align-items: center;">
             <select id="setting-retention-select" style="flex: 1; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--line); font-size: 13px; background: var(--card); color: var(--ink);">
-              <option value="14">14 Days (High Turnover / Dev)</option>
-              <option value="30" selected>30 Days (Standard Corporate Retention)</option>
-              <option value="60">60 Days (Extended Audit Baseline)</option>
-              <option value="90">90 Days (Enterprise Security Baseline)</option>
-              <option value="0">Keep All Logs Indefinitely (Unlimited)</option>
+              <option value="14">14 Days (Testing / Dev)</option>
+              <option value="30">30 Days (Short-term Corporate Retention)</option>
+              <option value="60">60 Days (Standard Audit Retention)</option>
+              <option value="90" selected>90 Days (Enterprise Security Baseline - Default)</option>
+              <option value="180">180 Days (6 Months Compliance)</option>
+              <option value="365">365 Days (1 Full Year Regulatory)</option>
+              <option value="0">Keep All Logs Indefinitely (Unlimited Storage)</option>
             </select>
             <button class="btn btn-primary" onclick="saveRetentionPolicy()">Save Policy</button>
           </div>
+        </div>
+
+        <!-- 5. Export Telemetry Archive to Machine Location -->
+        <div style="background: var(--card-inner); border: 1px solid var(--line); border-radius: 12px; padding: 16px;">
+          <div style="font-weight: 600; font-size: 14px; margin-bottom: 4px;">📥 Export &amp; Backup Logs to Local File</div>
+          <div style="font-size: 12px; color: var(--muted); margin-bottom: 10px;">
+            Download all stored process events, window dwells, and audit records directly to your computer.
+          </div>
+          <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+            <button class="btn btn-primary" onclick="exportLogsToFile('json')">
+              <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+              Download JSON Log Archive
+            </button>
+            <button class="btn" onclick="exportLogsToFile('csv')">
+              <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+              Download CSV Spreadsheet
+            </button>
+          </div>
+        </div>
+
+        <!-- 6. User Management & Role-Based Access Control (RBAC) -->
+        <div style="background: var(--card-inner); border: 1px solid var(--line); border-radius: 12px; padding: 16px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <div>
+              <div style="font-weight: 600; font-size: 14px;">👥 User Accounts &amp; Role-Based Access Control (RBAC)</div>
+              <div style="font-size: 12px; color: var(--muted); margin-top: 2px;">
+                Manage operator accounts with granular permissions: <b>Viewer</b> (read-only), <b>Admin</b> (control endpoints), <b>Super Admin</b> (full management).
+              </div>
+            </div>
+            <button class="btn btn-sm" onclick="fetchUsersList()">↻ Refresh Users</button>
+          </div>
+
+          <!-- Existing Users Table -->
+          <div style="margin-top: 10px; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: var(--card);">
+            <table style="width: 100%; border-collapse: collapse; font-size: 12.5px;">
+              <thead>
+                <tr style="border-bottom: 1px solid var(--line); background: var(--card-inner); text-align: left;">
+                  <th style="padding: 8px 12px;">Username</th>
+                  <th style="padding: 8px 12px;">Role Access</th>
+                  <th style="padding: 8px 12px;">Created</th>
+                  <th style="padding: 8px 12px; text-align: right;">Action</th>
+                </tr>
+              </thead>
+              <tbody id="user-management-table-body">
+                <tr><td colspan="4" style="text-align: center; padding: 12px; color: var(--muted);">Loading accounts...</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Add New User Form -->
+          <div style="margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line);">
+            <div style="font-size: 12.5px; font-weight: 600; margin-bottom: 8px;">Create New Operator or Viewer Account:</div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr 130px auto; gap: 8px; align-items: center;">
+              <input type="text" id="new-user-username" placeholder="Username (e.g. auditor_john)" style="padding: 7px 10px; border-radius: 7px; border: 1px solid var(--line); background: var(--card); color: var(--ink); font-size: 12.5px;">
+              <input type="password" id="new-user-password" placeholder="Password" style="padding: 7px 10px; border-radius: 7px; border: 1px solid var(--line); background: var(--card); color: var(--ink); font-size: 12.5px;">
+              <select id="new-user-role" style="padding: 7px 8px; border-radius: 7px; border: 1px solid var(--line); background: var(--card); color: var(--ink); font-size: 12px;">
+                <option value="VIEWER" selected>Viewer (Read Only)</option>
+                <option value="ADMIN">Admin (Operate)</option>
+                <option value="SUPER_ADMIN">Super Admin</option>
+              </select>
+              <button class="btn btn-primary" onclick="submitCreateUser()" style="padding: 7px 14px;">Add User</button>
+            </div>
+            <div id="new-user-msg" style="font-size: 11.5px; margin-top: 6px; display: none;"></div>
+          </div>
+        </div>
         </div>
 
         <!-- 5. Theme & Database Cleanup -->
@@ -2188,7 +2261,7 @@
        JAVASCRIPT APPLICATION LOGIC
        ========================================================================= -->
   <script>
-    let authToken = localStorage.getItem('eg_token') || 'superadmin-dev-token-2026';
+    let authToken = localStorage.getItem('eg_token') || '';
     let currentAgent = null;
     let currentHost = null;
     let currentDrawerAgent = null;
@@ -2211,7 +2284,12 @@
       const btn = document.getElementById('btn-login-submit');
 
       const username = (uEl ? uEl.value.trim() : '') || 'admin';
-      const password = (pEl ? pEl.value : '') || 'admin123';
+      const password = (pEl ? pEl.value : '');
+
+      if (!password) {
+        showToast('Please enter your administrator password', true);
+        return;
+      }
 
       if (btn) { btn.disabled = true; btn.textContent = 'Authenticating...'; }
 
@@ -2226,7 +2304,16 @@
         }
         const data = await res.json();
         authToken = data.token;
+        currentUserRole = data.role || 'SUPER_ADMIN';
         localStorage.setItem('eg_token', authToken);
+        localStorage.setItem('eg_user', data.username);
+        localStorage.setItem('eg_role', currentUserRole);
+
+        const uDisp = document.getElementById('user-display');
+        if (uDisp) uDisp.textContent = data.username;
+        const uRole = document.getElementById('user-role-display');
+        if (uRole) uRole.textContent = `${currentUserRole} · Full Control`;
+
         showToast('Signed in successfully as ' + data.username);
         showView('fleet');
         syncAll();
@@ -2258,7 +2345,7 @@
 
     // App Startup
     window.addEventListener('DOMContentLoaded', () => {
-      initTheme();
+      initTheme(); initHttpsStatus();
       const loginSrv = document.getElementById('login-srv');
       if (loginSrv) {
         loginSrv.value = window.location.host || '192.168.102.105:8000';
@@ -2266,10 +2353,30 @@
       if (!authToken) {
         showView('login');
       } else {
-        showView('fleet');
-        syncAll();
+        fetch('/api/me', { headers: { 'Authorization': `Bearer ${authToken}` } })
+          .then(res => {
+            if (!res.ok) {
+              authToken = '';
+              localStorage.removeItem('eg_token');
+              showView('login');
+            } else {
+              return res.json();
+            }
+          })
+          .then(me => {
+            if (me) {
+              currentUserRole = me.role || 'SUPER_ADMIN';
+              const uDisp = document.getElementById('user-display');
+              if (uDisp) uDisp.textContent = me.username || 'Admin';
+              showView('fleet');
+              syncAll();
+            }
+          })
+          .catch(() => {
+            showView('login');
+          });
       }
-      renderMachineSelectorChips(); renderSidePanelEndpoints(agentsList);
+      renderMachineSelectorChips(); renderFleetCardGrid(agentsList); renderSidePanelEndpoints(agentsList);
       renderFleetTable(agentsList);
       setInterval(syncAll, 3000);
       drawScreenFrame();
@@ -2372,7 +2479,7 @@
         pill.className = 'pill pill-success';
         pill.innerHTML = `<span class="dot online"></span> ${online} Online / ${agentsList.length} Total`;
       }
-      renderMachineSelectorChips(); renderSidePanelEndpoints(agentsList);
+      renderMachineSelectorChips(); renderFleetCardGrid(agentsList); renderSidePanelEndpoints(agentsList);
       renderFleetTable(agentsList);
       renderEndpointsInventory(agentsList);
       syncLiveEvents();
@@ -2609,7 +2716,7 @@
         if (h) h.textContent = hostname;
       }
 
-      renderMachineSelectorChips(); renderSidePanelEndpoints(agentsList);
+      renderMachineSelectorChips(); renderFleetCardGrid(agentsList); renderSidePanelEndpoints(agentsList);
       renderFleetTable(agentsList);
       renderEndpointsInventory(agentsList);
       showToast(`Selected endpoint: ${hostname}`);
@@ -3626,7 +3733,7 @@
         logLiveEvent(`agent uninstallation authorized: service deleted and removed from fleet`, 'warn');
         agentsList = agentsList.filter(a => a.id !== currentAgent);
         renderFleetTable(agentsList);
-        renderMachineSelectorChips(); renderSidePanelEndpoints(agentsList);
+        renderMachineSelectorChips(); renderFleetCardGrid(agentsList); renderSidePanelEndpoints(agentsList);
         renderEndpointsInventory(agentsList);
         showView('fleet');
       } catch (err) {
@@ -3824,7 +3931,7 @@
         }
         renderEndpointsInventory(agentsList);
         renderFleetTable(agentsList);
-        renderMachineSelectorChips(); renderSidePanelEndpoints(agentsList);
+        renderMachineSelectorChips(); renderFleetCardGrid(agentsList); renderSidePanelEndpoints(agentsList);
         if (typeof updateFleetKPIs === 'function') updateFleetKPIs(agentsList);
         if (currentAgent === agentId) {
           if (agentsList.length > 0) {
@@ -3874,18 +3981,23 @@
               <div class="bar" style="width: 100%;"><i style="background: var(--success); width: ${a.cpu}%;"></i></div>
             </div>
 
-            <div style="display: flex; gap: 8px; margin-top: 4px; flex-wrap: wrap;">
-              <button class="btn btn-sm btn-primary" style="flex: 1; justify-content: center;" onclick="event.stopPropagation(); openEndpointDrawer('${a.id}', '${a.host}');">
-                Manage Endpoint
+            <div style="display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap;">
+              <button class="btn btn-sm btn-primary" style="flex: 1; min-width: 110px; justify-content: center;" onclick="event.stopPropagation(); openEndpointDrawer('${a.id}', '${a.host}');">
+                ⚙️ Manage
               </button>
-              <button class="btn btn-sm" onclick="event.stopPropagation(); selectAgent('${a.id}', '${a.host}'); navigateToSection('screen');">
-                Screen
+              <button class="btn btn-sm" onclick="event.stopPropagation(); selectAgent('${a.id}', '${a.host}'); navigateToSection('browser');" title="Open Browser &amp; Dwell for ${escapeHtml(a.host)}">
+                🌐 Browser &amp; Dwell
               </button>
-              <button class="btn btn-sm" onclick="event.stopPropagation(); selectAgent('${a.id}', '${a.host}'); navigateToSection('terminal');">
-                Shell
+              <button class="btn btn-sm" onclick="event.stopPropagation(); selectAgent('${a.id}', '${a.host}'); navigateToSection('alerts');" title="Open Alerts Feed for ${escapeHtml(a.host)}">
+                🚨 Alerts
+              </button>
+              <button class="btn btn-sm" onclick="event.stopPropagation(); selectAgent('${a.id}', '${a.host}'); navigateToSection('screen');" title="Live DirectX Screen Feed">
+                🖥️ Screen
+              </button>
+              <button class="btn btn-sm" onclick="event.stopPropagation(); selectAgent('${a.id}', '${a.host}'); navigateToSection('terminal');" title="Remote ConPTY Terminal">
+                &gt;_ Shell
               </button>
               <button class="btn btn-sm btn-danger" onclick="event.stopPropagation(); selectAgent('${a.id}', '${a.host}'); openUninstallModal();" title="Uninstall Agent">Uninstall</button>
-              <button class="btn btn-sm" onclick="event.stopPropagation(); deleteEndpointDirectly('${a.id}', '${a.host}');" title="Remove from fleet inventory" style="color: var(--critical); border-color: rgba(240,55,90,0.3);">Remove</button>
             </div>
           </div>
         `;
@@ -3971,7 +4083,7 @@
 
       // Render UI tables
       renderFleetTable(agentsList);
-      renderMachineSelectorChips(); renderSidePanelEndpoints(agentsList);
+      renderMachineSelectorChips(); renderFleetCardGrid(agentsList); renderSidePanelEndpoints(agentsList);
       renderEndpointsInventory(agentsList);
 
       // Update selected agent status
@@ -4769,6 +4881,312 @@
       renderBrowserTableRows();
     }
 
+    
+    // -------------------------------------------------------------------------
+    // Fleet Endpoints Card Grid Switcher (Inventory-Style Cards at Top of Detail)
+    // -------------------------------------------------------------------------
+    function renderFleetCardGrid(agents) {
+      const grid = document.getElementById('fleet-card-switcher-grid');
+      const statsPill = document.getElementById('fleet-card-switcher-pill');
+      if (!grid) return;
+
+      const onlineCount = (agents || []).filter(a => a.status === 'ONLINE').length;
+      if (statsPill) {
+        statsPill.className = `pill ${onlineCount > 0 ? 'pill-success' : 'pill-muted'}`;
+        statsPill.innerHTML = `<span class="dot ${onlineCount > 0 ? 'online' : 'offline'}"></span> ${onlineCount} Online / ${(agents || []).length} Total`;
+      }
+
+      const isAllSelected = !currentAgent;
+      let html = `
+        <div class="card fleet-side-card ${isAllSelected ? 'active' : ''}" 
+             style="padding: 14px 16px; cursor: pointer; border-radius: 10px; display: flex; flex-direction: column; justify-content: space-between; gap: 8px; ${isAllSelected ? 'border: 2px solid var(--accent) !important; background: var(--accent-soft) !important;' : 'border: 1px solid var(--line);'}"
+             onclick="selectAllEndpoints();" 
+             title="View combined telemetry across all fleet endpoints">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="font-size: 20px;">🌐</span>
+              <div>
+                <div style="font: 700 14px 'Space Grotesk', sans-serif; color: ${isAllSelected ? 'var(--accent)' : 'var(--ink)'};">All Fleet (Combined)</div>
+                <div style="font-size: 11px; color: var(--muted);" class="mono">Simultaneous Telemetry</div>
+              </div>
+            </div>
+            <span class="pill pill-primary" style="font-size: 9.5px; font-weight: 700;">ALL HOSTS</span>
+          </div>
+          <div style="font-size: 11.5px; color: var(--muted); line-height: 1.35;">
+            Aggregated real-time logs across all ${(agents || []).length} registered fleet endpoints.
+          </div>
+        </div>
+      `;
+
+      if (agents && agents.length > 0) {
+        html += agents.map(a => {
+          const isSel = currentAgent === a.id;
+          const isOnline = a.status === 'ONLINE';
+          const cpuVal = a.cpu || 18;
+          return `
+            <div class="card fleet-side-card ${isSel ? 'active' : ''}" 
+                 style="padding: 14px 16px; cursor: pointer; border-radius: 10px; display: flex; flex-direction: column; gap: 8px; ${isSel ? 'border: 2px solid var(--accent) !important; background: var(--accent-soft) !important;' : 'border: 1px solid var(--line);'}; border-left: 4px solid ${isOnline ? 'var(--success)' : '#777'};"
+                 onclick="selectAgent('${escapeHtml(a.id)}', '${escapeHtml(a.host)}');"
+                 title="Focus telemetry on ${escapeHtml(a.host)}">
+              <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <span style="font-size: 18px;">💻</span>
+                  <div>
+                    <div style="font: 700 14px 'Space Grotesk', sans-serif; color: ${isSel ? 'var(--accent)' : 'var(--ink)'};">
+                      ${escapeHtml(a.host)}
+                    </div>
+                    <div style="font-size: 11px; color: var(--muted);" class="mono">👤 ${escapeHtml(a.user || 'akash.j')}</div>
+                  </div>
+                </div>
+                <span class="pill ${isOnline ? 'pill-success' : 'pill-muted'}" style="font-size: 9.5px;">
+                  <span class="dot ${isOnline ? 'online' : 'offline'}"></span>
+                  ${a.status}
+                </span>
+              </div>
+              <div style="display: flex; justify-content: space-between; font-size: 11px; color: var(--muted);" class="mono">
+                <span>IP: ${escapeHtml(a.ip)}</span>
+                <span>RTT: ${a.rtt || 1}ms</span>
+                <span>${escapeHtml(a.os || 'Win 11')}</span>
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 3px; font-size: 10.5px;">
+                <div style="display: flex; justify-content: space-between; color: var(--muted);">
+                  <span>CPU Load:</span>
+                  <strong>${cpuVal}%</strong>
+                </div>
+                <div class="bar" style="width: 100%; height: 4px;"><i style="background: var(--success); width: ${cpuVal}%;"></i></div>
+              </div>
+              <div style="display: flex; justify-content: flex-end; gap: 6px; margin-top: 2px;">
+                <button class="btn btn-sm" style="padding: 2px 8px; font-size: 10px;" onclick="event.stopPropagation(); openEndpointDrawer('${escapeHtml(a.id)}', '${escapeHtml(a.host)}');" title="Open full management drawer">
+                  ⚙️ Manage
+                </button>
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+
+      grid.innerHTML = html;
+    }
+
+    // -------------------------------------------------------------------------
+    // Browser & Dwell Pagination Implementation
+    // -------------------------------------------------------------------------
+    let browserPageSize = 25;
+    let browserCurrentPage = 1;
+
+    function setBrowserPageSize(size) {
+      browserPageSize = size === 'all' ? 'all' : parseInt(size, 10);
+      browserCurrentPage = 1;
+      renderBrowserTableRows();
+    }
+
+    function setBrowserPage(p) {
+      browserCurrentPage = Math.max(1, p);
+      renderBrowserTableRows();
+    }
+
+    function nextBrowserPage() {
+      browserCurrentPage++;
+      renderBrowserTableRows();
+    }
+
+    function prevBrowserPage() {
+      if (browserCurrentPage > 1) {
+        browserCurrentPage--;
+        renderBrowserTableRows();
+      }
+    }
+
+    function lastBrowserPage() {
+      const filtered = getFilteredBrowserEvents();
+      const totalPages = browserPageSize === 'all' ? 1 : Math.ceil(filtered.length / browserPageSize);
+      browserCurrentPage = Math.max(1, totalPages);
+      renderBrowserTableRows();
+    }
+
+    function getFilteredBrowserEvents() {
+      let events = currentBrowserEvents || [];
+      if (currentBrowserFilter === 'WEB') {
+        events = events.filter(e => parseBrowserTitle(e.window_title, e.image_path).isBrowser);
+      } else if (currentBrowserFilter === 'APPS') {
+        events = events.filter(e => !parseBrowserTitle(e.window_title, e.image_path).isBrowser);
+      } else if (currentBrowserFilter === 'WORKSPACES') {
+        events = events.filter(e => Boolean(parseBrowserTitle(e.window_title, e.image_path).workspaceName));
+      } else if (currentBrowserFilter === 'CHAT') {
+        events = events.filter(e => parseBrowserTitle(e.window_title, e.image_path).isChat);
+      } else if (currentBrowserFilter === 'INCOGNITO') {
+        events = events.filter(e => parseBrowserTitle(e.window_title, e.image_path).isIncognito);
+      }
+
+      if (currentBrowserSearch) {
+        events = events.filter(e => {
+          const info = parseBrowserTitle(e.window_title, e.image_path);
+          const hostStr = (e.hostname || e.agent_id || '').toLowerCase();
+          return info.rawTitle.toLowerCase().includes(currentBrowserSearch) ||
+                 info.websiteTitle.toLowerCase().includes(currentBrowserSearch) ||
+                 info.workspaceName.toLowerCase().includes(currentBrowserSearch) ||
+                 info.browserName.toLowerCase().includes(currentBrowserSearch) ||
+                 hostStr.includes(currentBrowserSearch) ||
+                 String(e.process_id).includes(currentBrowserSearch);
+        });
+      }
+      return events;
+    }
+
+    // -------------------------------------------------------------------------
+    // Export Telemetry Archive to File (JSON or CSV)
+    // -------------------------------------------------------------------------
+    function exportLogsToFile(format) {
+      let url = `/api/system/logs/export?format=${encodeURIComponent(format)}`;
+      if (currentAgent) url += `&agent_id=${encodeURIComponent(currentAgent)}`;
+      window.open(url, '_blank');
+      showToast(`Downloading telemetry logs (${format.toUpperCase()})...`);
+    }
+
+    // -------------------------------------------------------------------------
+    // User Accounts & Role-Based Access Control (RBAC) Client Management
+    // -------------------------------------------------------------------------
+    let currentUserRole = 'SUPER_ADMIN';
+
+    async function fetchUsersList() {
+      const tbody = document.getElementById('user-management-table-body');
+      if (!tbody) return;
+      try {
+        const res = await fetch('/api/users', {
+          headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+        if (!res.ok) {
+          tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: var(--muted); padding: 12px;">Failed to load users (${res.status})</td></tr>`;
+          return;
+        }
+        const users = await res.json();
+        if (!users || users.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: var(--muted); padding: 12px;">No user accounts found.</td></tr>`;
+          return;
+        }
+        tbody.innerHTML = users.map(u => {
+          const roleBadge = u.role === 'SUPER_ADMIN' ? 'pill-primary' : (u.role === 'ADMIN' ? 'pill-warning' : 'pill-muted');
+          const isMasterAdmin = u.username === 'admin';
+          return `
+            <tr style="border-bottom: 1px solid var(--line);">
+              <td style="padding: 8px 12px; font-weight: 600;">
+                👤 ${escapeHtml(u.username)}
+              </td>
+              <td style="padding: 8px 12px;">
+                <span class="pill ${roleBadge}" style="font-size: 10px; font-weight: 700;">${escapeHtml(u.role)}</span>
+              </td>
+              <td style="padding: 8px 12px; font-size: 11px; color: var(--muted);" class="mono">
+                ${new Date(u.created_at || Date.now()).toLocaleDateString()}
+              </td>
+              <td style="padding: 8px 12px; text-align: right;">
+                ${isMasterAdmin ? '<span style="font-size: 11px; color: var(--muted);">Primary Account</span>' : `
+                  <button class="btn btn-sm btn-danger" onclick="deleteUserAccount('${escapeHtml(u.username)}')" style="padding: 2px 7px; font-size: 11px;">
+                    Delete
+                  </button>
+                `}
+              </td>
+            </tr>
+          `;
+        }).join('');
+      } catch(e) {
+        tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: var(--critical); padding: 12px;">Error loading users: ${escapeHtml(e.message)}</td></tr>`;
+      }
+    }
+
+    async function submitCreateUser() {
+      const uInp = document.getElementById('new-user-username');
+      const pInp = document.getElementById('new-user-password');
+      const rSel = document.getElementById('new-user-role');
+      const msg = document.getElementById('new-user-msg');
+      if (!uInp || !pInp || !rSel) return;
+
+      const username = uInp.value.trim();
+      const password = pInp.value.trim();
+      const role = rSel.value;
+      if (!username || !password) {
+        if (msg) {
+          msg.style.display = 'block';
+          msg.style.color = 'var(--critical)';
+          msg.textContent = 'Please enter both username and password.';
+        }
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/users', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${authToken}`
+          },
+          body: JSON.stringify({ username, password, role })
+        });
+        if (!res.ok) {
+          const errText = await res.text();
+          throw new Error(errText || 'Failed to create user');
+        }
+        uInp.value = '';
+        pInp.value = '';
+        if (msg) {
+          msg.style.display = 'block';
+          msg.style.color = 'var(--success)';
+          msg.textContent = `User '${username}' created with role ${role}!`;
+          setTimeout(() => { msg.style.display = 'none'; }, 4000);
+        }
+        showToast(`User account '${username}' created!`);
+        fetchUsersList();
+      } catch(e) {
+        if (msg) {
+          msg.style.display = 'block';
+          msg.style.color = 'var(--critical)';
+          msg.textContent = e.message;
+        }
+      }
+    }
+
+    async function deleteUserAccount(username) {
+      if (!confirm(`Are you sure you want to delete user account '${username}'?`)) return;
+      try {
+        const res = await fetch(`/api/users?username=${encodeURIComponent(username)}`, {
+          method: 'DELETE',
+          headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+        if (!res.ok) throw new Error(await res.text());
+        showToast(`User '${username}' deleted.`);
+        fetchUsersList();
+      } catch(e) {
+        alert('Failed to delete user: ' + e.message);
+      }
+    }
+
+    // -------------------------------------------------------------------------
+    // HTTPS Encryption Status & Upgrade Helper
+    // -------------------------------------------------------------------------
+    function checkHttpsUpgrade() {
+      if (window.location.protocol === 'https:') {
+        alert('Secure HTTPS encryption is active! Running TLS 1.3 with OpenSSL certificates.');
+      } else {
+        const httpsUrl = `https://${window.location.hostname}:8443/`;
+        if (confirm(`You are currently accessing via unencrypted HTTP.\n\nSwitch to enterprise-grade OpenSSL TLS 1.3 HTTPS at ${httpsUrl}?`)) {
+          window.location.href = httpsUrl;
+        }
+      }
+    }
+
+    function initHttpsStatus() {
+      const pill = document.getElementById('header-https-pill');
+      if (!pill) return;
+      if (window.location.protocol === 'https:') {
+        pill.className = 'pill pill-success';
+        pill.innerHTML = `<span class="dot online"></span> 🔒 TLS 1.3 Encrypted`;
+        pill.title = 'Connection is encrypted with enterprise TLS 1.3 / OpenSSL';
+      } else {
+        pill.className = 'pill pill-warning';
+        pill.innerHTML = `<span class="dot warning"></span> ⚠️ HTTP (Click to use HTTPS :8443)`;
+        pill.title = 'Click to switch to encrypted HTTPS on port 8443';
+      }
+    }
+
     function renderSidePanelEndpoints(agents) {
       const container = document.getElementById('side-panel-machine-list');
       const countEl = document.getElementById('side-panel-online-count');
@@ -5040,7 +5458,32 @@
         return;
       }
 
-      tbody.innerHTML = events.map(d => {
+      // Pagination slicing
+      const totalEvents = events.length;
+      const totalPages = browserPageSize === 'all' ? 1 : Math.max(1, Math.ceil(totalEvents / browserPageSize));
+      if (browserCurrentPage > totalPages) browserCurrentPage = totalPages;
+      if (browserCurrentPage < 1) browserCurrentPage = 1;
+
+      const startIndex = browserPageSize === 'all' ? 0 : (browserCurrentPage - 1) * browserPageSize;
+      const endIndex = browserPageSize === 'all' ? totalEvents : Math.min(startIndex + browserPageSize, totalEvents);
+      const pageEvents = events.slice(startIndex, endIndex);
+
+      const rangeLabel = document.getElementById('browser-pagination-range');
+      if (rangeLabel) rangeLabel.textContent = `Showing ${totalEvents === 0 ? 0 : startIndex + 1}–${endIndex} of ${totalEvents} activity logs`;
+
+      const pageDisplay = document.getElementById('browser-page-display');
+      if (pageDisplay) pageDisplay.textContent = `Page ${browserCurrentPage} of ${totalPages}`;
+
+      const btnPrev = document.getElementById('btn-browser-prev');
+      const btnFirst = document.getElementById('btn-browser-first');
+      const btnNext = document.getElementById('btn-browser-next');
+      const btnLast = document.getElementById('btn-browser-last');
+      if (btnPrev) btnPrev.disabled = (browserCurrentPage <= 1);
+      if (btnFirst) btnFirst.disabled = (browserCurrentPage <= 1);
+      if (btnNext) btnNext.disabled = (browserCurrentPage >= totalPages);
+      if (btnLast) btnLast.disabled = (browserCurrentPage >= totalPages);
+
+      tbody.innerHTML = pageEvents.map(d => {
         const timeStr = new Date(d.event_time || d.timestamp_iso || d.timestamp).toLocaleTimeString();
         const info = parseBrowserTitle(d.window_title, d.image_path);
         let dwellStr = 'Active';
@@ -5125,6 +5568,7 @@
     }
 
     async function openSettingsModal() {
+      fetchUsersList();
       const modal = document.getElementById('modal-settings');
       if (modal) {
         modal.classList.add('open');

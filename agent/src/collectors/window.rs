@@ -344,43 +344,74 @@ fn sanitize_window_title(raw: &str, image: &str) -> String {
     };
     let clean = raw.trim_start_matches("[INCOGNITO] ").trim_start_matches("[INPRIVATE] ").trim();
 
-    // 1. Chat & Communication Apps: Redact conversation text and protect private chats
+    // 1. Chat & Communication Apps: Preserve active channel / chat partner while stripping brand suffix
+    if img_lower.contains("teams") || lower.contains("teams") {
+        let mut t = clean;
+        for s in &[" | Microsoft Teams", " - Microsoft Teams", " - Teams"] {
+            if let Some(idx) = t.rfind(s) {
+                t = &t[..idx];
+            }
+        }
+        let t_trim = t.trim();
+        if !t_trim.is_empty() && !t_trim.eq_ignore_ascii_case("microsoft teams") {
+            return format!("{}Microsoft Teams · {}", prefix, t_trim);
+        }
+        return format!("{}Microsoft Teams (Workspace)", prefix);
+    }
     if img_lower.contains("slack") || lower.contains("slack") {
-        if let Some(pos) = clean.find('#') {
-            let ch_part = &clean[pos..];
-            let end = ch_part.find('|').unwrap_or(ch_part.len());
-            return format!("{}Slack ({})", prefix, ch_part[..end].trim());
+        let mut t = clean;
+        for s in &[" | Slack", " - Slack"] {
+            if let Some(idx) = t.rfind(s) {
+                t = &t[..idx];
+            }
+        }
+        let t_trim = t.trim();
+        if !t_trim.is_empty() && !t_trim.eq_ignore_ascii_case("slack") {
+            return format!("{}Slack · {}", prefix, t_trim);
         }
         return format!("{}Slack (Workspace)", prefix);
     }
-    if img_lower.contains("teams") || lower.contains("teams") {
-        return format!("{}Microsoft Teams (Workspace / Chat)", prefix);
-    }
     if img_lower.contains("whatsapp") || lower.contains("whatsapp") {
+        let mut t = clean;
+        for s in &[" - WhatsApp", " | WhatsApp"] {
+            if let Some(idx) = t.rfind(s) {
+                t = &t[..idx];
+            }
+        }
+        let t_trim = t.trim();
+        if !t_trim.is_empty() && !t_trim.eq_ignore_ascii_case("whatsapp") {
+            return format!("{}WhatsApp · {}", prefix, t_trim);
+        }
         return format!("{}WhatsApp (Direct Message)", prefix);
     }
     if img_lower.contains("telegram") || lower.contains("telegram") {
-        return format!("{}Telegram (Direct Message / Channel)", prefix);
+        let mut t = clean;
+        for s in &[" - Telegram", " | Telegram"] {
+            if let Some(idx) = t.rfind(s) {
+                t = &t[..idx];
+            }
+        }
+        let t_trim = t.trim();
+        if !t_trim.is_empty() && !t_trim.eq_ignore_ascii_case("telegram") {
+            return format!("{}Telegram · {}", prefix, t_trim);
+        }
+        return format!("{}Telegram (Messenger)", prefix);
     }
     if img_lower.contains("discord") || lower.contains("discord") {
-        if let Some(pos) = clean.find('#') {
-            let ch_part = &clean[pos..];
-            let end = ch_part.find(" - ").unwrap_or(ch_part.len());
-            return format!("{}Discord ({})", prefix, ch_part[..end].trim());
+        let mut t = clean;
+        for s in &[" - Discord", " | Discord"] {
+            if let Some(idx) = t.rfind(s) {
+                t = &t[..idx];
+            }
+        }
+        let t_trim = t.trim();
+        if !t_trim.is_empty() && !t_trim.eq_ignore_ascii_case("discord") {
+            return format!("{}Discord · {}", prefix, t_trim);
         }
         return format!("{}Discord (Chat)", prefix);
     }
-    if lower.contains("chatgpt") || lower.contains("chat.openai.com") {
-        return format!("{}ChatGPT (AI Assistant Session)", prefix);
-    }
-    if lower.contains("claude") && (lower.contains("anthropic") || lower.contains("claude.ai")) {
-        return format!("{}Claude AI (Session)", prefix);
-    }
-    if lower.contains("gemini") && lower.contains("google") {
-        return format!("{}Google Gemini (AI Session)", prefix);
-    }
 
-    // 2. Browsers: Strip browser brand suffix, protect web chats, extract workspace / domain
+    // 2. Browsers: Strip browser brand suffix, preserve the FULL website page title and visited location
     let is_browser = img_lower.contains("chrome")
         || img_lower.contains("msedge")
         || img_lower.contains("firefox")
@@ -399,80 +430,26 @@ fn sanitize_window_title(raw: &str, image: &str) -> String {
             " - Zen Browser",
             " - Opera",
             " - Arc",
+            " and 1 more page",
+            " and 2 more pages",
+            " and 3 more pages",
+            " and 4 more pages",
         ] {
             if let Some(idx) = title_part.rfind(suffix) {
                 title_part = &title_part[..idx];
             }
         }
-        let t_lower = title_part.to_lowercase();
 
-        // Web chats in browser
-        if t_lower.contains("whatsapp") {
-            return format!("{}WhatsApp Web (Chat)", prefix);
+        let trimmed_title = title_part.trim();
+        if trimmed_title.len() > 180 {
+            return format!("{}{}", prefix, &trimmed_title[..180]);
         }
-        if t_lower.contains("slack") {
-            return format!("{}Slack Web (Workspace)", prefix);
-        }
-        if t_lower.contains("teams") {
-            return format!("{}Microsoft Teams Web (Workspace)", prefix);
-        }
-        if t_lower.contains("discord") {
-            return format!("{}Discord Web (Chat)", prefix);
-        }
-        if t_lower.contains("telegram") {
-            return format!("{}Telegram Web (Chat)", prefix);
-        }
-        if t_lower.contains("chatgpt") {
-            return format!("{}ChatGPT (AI Assistant Session)", prefix);
-        }
-        if t_lower.contains("claude") {
-            return format!("{}Claude AI (Session)", prefix);
-        }
-
-        // Web Workspaces (GitHub, Jira, Docs, Figma, Notion, AWS)
-        if t_lower.contains("github") {
-            if let Some(idx) = title_part.find(':') {
-                return format!("{}GitHub: {}", prefix, title_part[..idx].trim());
-            }
-            return format!("{}GitHub (Workspace)", prefix);
-        }
-        if t_lower.contains("jira") || t_lower.contains("atlassian") {
-            return format!("{}Jira (Workspace)", prefix);
-        }
-        if t_lower.contains("notion") {
-            return format!("{}Notion (Workspace)", prefix);
-        }
-        if t_lower.contains("figma") {
-            return format!("{}Figma (Workspace)", prefix);
-        }
-        if t_lower.contains("google docs") || t_lower.contains("google sheets") || t_lower.contains("google slides") {
-            return format!("{}Google Docs (Workspace)", prefix);
-        }
-        if t_lower.contains("aws") || t_lower.contains("amazon web services") {
-            return format!("{}AWS Console (Cloud Workspace)", prefix);
-        }
-        if t_lower.contains("azure") {
-            return format!("{}Azure Portal (Cloud Workspace)", prefix);
-        }
-
-        // Truncate long URLs or query strings to keep clean workspace identity
-        if title_part.len() > 65 {
-            if let Some(pos) = title_part.find(" - ") {
-                if pos > 3 {
-                    return format!("{}{}", prefix, &title_part[..pos]);
-                }
-            }
-            return format!("{}{}", prefix, &title_part[..65]);
-        }
-        return format!("{}{}", prefix, title_part);
+        return format!("{}{}", prefix, trimmed_title);
     }
 
     // 3. IDEs / Editors: keep workspace/project name and editor name
     if img_lower.contains("code") || img_lower.contains("antigravity") || lower.contains("visual studio") {
-        let parts: Vec<&str> = clean.split(" - ").collect();
-        if parts.len() >= 2 {
-            return format!("{}{} - {}", prefix, parts[0], parts[1]);
-        }
+        return format!("{}{}", prefix, clean);
     }
 
     raw.to_string()

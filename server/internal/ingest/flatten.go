@@ -67,44 +67,71 @@ func SanitizeWindowTitle(raw, image string) string {
 		clean = strings.TrimSpace(strings.TrimPrefix(raw, "[INPRIVATE]"))
 	}
 
-	// 1. Chat & Messaging Privacy: Redact private message text
-	if strings.Contains(imgLower, "slack") || strings.Contains(lower, "slack") {
-		if idx := strings.Index(clean, "#"); idx != -1 {
-			ch := clean[idx:]
-			if pipe := strings.Index(ch, "|"); pipe != -1 {
-				ch = ch[:pipe]
+	// 1. Chat & Messaging Privacy: Preserve active channel / chat partner while stripping brand suffix
+	if strings.Contains(imgLower, "teams") || strings.Contains(lower, "teams") {
+		t := clean
+		for _, s := range []string{" | Microsoft Teams", " - Microsoft Teams", " - Teams"} {
+			if idx := strings.LastIndex(t, s); idx != -1 {
+				t = t[:idx]
 			}
-			return prefix + "Slack (" + strings.TrimSpace(ch) + ")"
+		}
+		tTrim := strings.TrimSpace(t)
+		if tTrim != "" && !strings.EqualFold(tTrim, "microsoft teams") {
+			return prefix + "Microsoft Teams · " + tTrim
+		}
+		return prefix + "Microsoft Teams (Workspace)"
+	}
+	if strings.Contains(imgLower, "slack") || strings.Contains(lower, "slack") {
+		t := clean
+		for _, s := range []string{" | Slack", " - Slack"} {
+			if idx := strings.LastIndex(t, s); idx != -1 {
+				t = t[:idx]
+			}
+		}
+		tTrim := strings.TrimSpace(t)
+		if tTrim != "" && !strings.EqualFold(tTrim, "slack") {
+			return prefix + "Slack · " + tTrim
 		}
 		return prefix + "Slack (Workspace)"
 	}
-	if strings.Contains(imgLower, "teams") || strings.Contains(lower, "teams") {
-		return prefix + "Microsoft Teams (Workspace / Chat)"
-	}
 	if strings.Contains(imgLower, "whatsapp") || strings.Contains(lower, "whatsapp") {
+		t := clean
+		for _, s := range []string{" - WhatsApp", " | WhatsApp"} {
+			if idx := strings.LastIndex(t, s); idx != -1 {
+				t = t[:idx]
+			}
+		}
+		tTrim := strings.TrimSpace(t)
+		if tTrim != "" && !strings.EqualFold(tTrim, "whatsapp") {
+			return prefix + "WhatsApp · " + tTrim
+		}
 		return prefix + "WhatsApp (Direct Message)"
 	}
 	if strings.Contains(imgLower, "telegram") || strings.Contains(lower, "telegram") {
-		return prefix + "Telegram (Direct Message / Channel)"
+		t := clean
+		for _, s := range []string{" - Telegram", " | Telegram"} {
+			if idx := strings.LastIndex(t, s); idx != -1 {
+				t = t[:idx]
+			}
+		}
+		tTrim := strings.TrimSpace(t)
+		if tTrim != "" && !strings.EqualFold(tTrim, "telegram") {
+			return prefix + "Telegram · " + tTrim
+		}
+		return prefix + "Telegram (Messenger)"
 	}
 	if strings.Contains(imgLower, "discord") || strings.Contains(lower, "discord") {
-		if idx := strings.Index(clean, "#"); idx != -1 {
-			ch := clean[idx:]
-			if dash := strings.Index(ch, " - "); dash != -1 {
-				ch = ch[:dash]
+		t := clean
+		for _, s := range []string{" - Discord", " | Discord"} {
+			if idx := strings.LastIndex(t, s); idx != -1 {
+				t = t[:idx]
 			}
-			return prefix + "Discord (" + strings.TrimSpace(ch) + ")"
+		}
+		tTrim := strings.TrimSpace(t)
+		if tTrim != "" && !strings.EqualFold(tTrim, "discord") {
+			return prefix + "Discord · " + tTrim
 		}
 		return prefix + "Discord (Chat)"
-	}
-	if strings.Contains(lower, "chatgpt") || strings.Contains(lower, "chat.openai.com") {
-		return prefix + "ChatGPT (AI Assistant Session)"
-	}
-	if strings.Contains(lower, "claude") && (strings.Contains(lower, "anthropic") || strings.Contains(lower, "claude.ai")) {
-		return prefix + "Claude AI (Session)"
-	}
-	if strings.Contains(lower, "gemini") && strings.Contains(lower, "google") {
-		return prefix + "Google Gemini (AI Session)"
 	}
 
 	// 2. Browser Workspace Sanitization
@@ -126,72 +153,27 @@ func SanitizeWindowTitle(raw, image string) string {
 			" - Zen Browser",
 			" - Opera",
 			" - Arc",
+			" and 1 more page",
+			" and 2 more pages",
+			" and 3 more pages",
+			" and 4 more pages",
 		}
 		for _, s := range suffixes {
 			if idx := strings.LastIndex(titlePart, s); idx != -1 {
 				titlePart = titlePart[:idx]
 			}
 		}
-		tLower := strings.ToLower(titlePart)
-		if strings.Contains(tLower, "whatsapp") {
-			return prefix + "WhatsApp Web (Chat)"
-		}
-		if strings.Contains(tLower, "slack") {
-			return prefix + "Slack Web (Workspace)"
-		}
-		if strings.Contains(tLower, "teams") {
-			return prefix + "Microsoft Teams Web (Workspace)"
-		}
-		if strings.Contains(tLower, "discord") {
-			return prefix + "Discord Web (Chat)"
-		}
-		if strings.Contains(tLower, "telegram") {
-			return prefix + "Telegram Web (Chat)"
-		}
-		if strings.Contains(tLower, "chatgpt") {
-			return prefix + "ChatGPT (AI Assistant Session)"
-		}
-		if strings.Contains(tLower, "claude") {
-			return prefix + "Claude AI (Session)"
-		}
 
-		if strings.Contains(tLower, "github") {
-			if idx := strings.Index(titlePart, ":"); idx != -1 {
-				return prefix + "GitHub: " + strings.TrimSpace(titlePart[:idx])
-			}
-			return prefix + "GitHub (Workspace)"
+		trimmedTitle := strings.TrimSpace(titlePart)
+		if len(trimmedTitle) > 180 {
+			return prefix + trimmedTitle[:180]
 		}
-		if strings.Contains(tLower, "jira") || strings.Contains(tLower, "atlassian") {
-			return prefix + "Jira (Workspace)"
-		}
-		if strings.Contains(tLower, "notion") {
-			return prefix + "Notion (Workspace)"
-		}
-		if strings.Contains(tLower, "figma") {
-			return prefix + "Figma (Workspace)"
-		}
-		if strings.Contains(tLower, "google docs") || strings.Contains(tLower, "google sheets") {
-			return prefix + "Google Docs (Workspace)"
-		}
-		if strings.Contains(tLower, "aws") || strings.Contains(tLower, "amazon web services") {
-			return prefix + "AWS Console (Cloud Workspace)"
-		}
-
-		if len(titlePart) > 65 {
-			if pos := strings.Index(titlePart, " - "); pos > 3 {
-				return prefix + titlePart[:pos]
-			}
-			return prefix + titlePart[:65]
-		}
-		return prefix + titlePart
+		return prefix + trimmedTitle
 	}
 
 	// 3. IDEs / Editors: keep workspace name and editor
 	if strings.Contains(imgLower, "code") || strings.Contains(imgLower, "antigravity") || strings.Contains(lower, "visual studio") {
-		parts := strings.Split(clean, " - ")
-		if len(parts) >= 2 {
-			return prefix + parts[0] + " - " + parts[1]
-		}
+		return prefix + clean
 	}
 
 	return raw

@@ -114,6 +114,8 @@ func (s *Server) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/api/agent/download", s.downloadKashAgent)
 	mux.HandleFunc("/api/agent/kash-agent.exe", s.downloadKashAgent)
 	mux.HandleFunc("/api/presence/history", s.requireAuth(s.presenceHistory))
+	mux.HandleFunc("/api/users", s.requireAuth(s.handleUsers))
+	mux.HandleFunc("/api/system/logs/export", s.requireAuth(s.exportLogs))
 }
 
 // ── Auth ─────────────────────────────────────────────────────────────────
@@ -1459,7 +1461,7 @@ func (s *Server) systemConfig(w http.ResponseWriter, r *http.Request) {
 			"http_addr":          "0.0.0.0:8080",
 			"grpc_addr":          "0.0.0.0:4443",
 			"storage_dir":        storageDir,
-			"log_retention_days": 30,
+			"log_retention_days": 90,
 			"local_ips":          config.GetLocalIPs(),
 			"admin_username":     "admin",
 		}
@@ -1771,5 +1773,104 @@ func (s *Server) presenceHistory(w http.ResponseWriter, r *http.Request) {
 
 	jsonOK(w, results)
 }
+
+func (s *Server) handleUsers(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case http.MethodGet:
+		users, err := s.auth.ListUsers(r.Context())
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		jsonOK(w, users)
+	case http.MethodPost:
+		var req struct {
+			Username string `json:"username"`
+			Password string `json:"password"`
+			Role     string `json:"role"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			http.Error(w, "invalid request body", http.StatusBadRequest)
+			return
+		}
+		req.Username = strings.TrimSpace(req.Username)
+		req.Password = strings.TrimSpace(req.Password)
+		req.Role = strings.ToUpper(strings.TrimSpace(req.Role))
+		if req.Role == "" {
+			req.Role = "VIEWER"
+		}
+		if req.Username == "" || req.Password == "" {
+			http.Error(w, "username and password required", http.StatusBadRequest)
+			return
+		}
+		if err := s.auth.CreateUser(r.Context(), req.Username, req.Password, req.Role); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		jsonOK(w, map[string]string{
+			"status":   "ok",
+			"username": req.Username,
+			"role":     req.Role,
+		})
+	case http.MethodDelete:
+		u := r.URL.Query().Get("username")
+		if u == "" {
+			var req struct {
+				Username string `json:"username"`
+			}
+			_ = json.NewDecoder(r.Body).Decode(&req)
+			u = req.Username
+		}
+		if u == "" {
+			http.Error(w, "missing username parameter", http.StatusBadRequest)
+			return
+		}
+		if err := s.auth.DeleteUser(r.Context(), u); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		jsonOK(w, map[string]string{"status": "deleted", "username": u})
+	default:
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+	}
+}
+
+func (s *Server) exportLogs(w http.ResponseWriter, r *http.Request) {
+	format := r.URL.Query().Get("format")
+	if format == "" {
+		format = "json"
+	}
+	agentID := r.URL.Query().Get("agent_id")
+	var rows []store.EventRow
+	var err error
+	if s.ch != nil {
+		rows, err = s.ch.QueryEvents(r.Context(), agentID, "", "", "2000")
+	}
+	if err != nil || len(rows) == 0 {
+		rows = []store.EventRow{}
+	}
+
+	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=endpointguard-logs-%d.%s", time.Now().Unix(), format))
+	if format == "csv" {
+		w.Header().Set("Content-Type", "text/csv; charset=utf-8")
+		fmt.Fprintf(w, "timestamp,agent_id,hostname,event_type,window_title,process_id,image_path\n")
+		for _, e := range rows {
+			fmt.Fprintf(w, "%s,%s,%s,%s,\"%s\",%d,\"%s\"\n",
+				e.EventTime.Format(time.RFC3339),
+				e.AgentID,
+				e.Hostname,
+				e.EventType,
+				strings.ReplaceAll(e.WindowTitle, "\"", "\"\""),
+				e.ProcessID,
+				strings.ReplaceAll(e.ImagePath, "\"", "\"\""),
+			)
+		}
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	_ = json.NewEncoder(w).Encode(rows)
+}
+
 
 

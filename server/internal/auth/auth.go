@@ -87,11 +87,60 @@ func (s *Store) EnsureDefaultAdmin(ctx context.Context) (string, error) {
 	return password, nil
 }
 
+// UserInfo represents user account metadata returned to administrative clients.
+type UserInfo struct {
+	Username  string    `json:"username"`
+	Role      string    `json:"role"`
+	CreatedAt time.Time `json:"created_at"`
+}
+
+// ListUsers enumerates all registered operator and viewer accounts.
+func (s *Store) ListUsers(ctx context.Context) ([]UserInfo, error) {
+	if s.pool == nil {
+		return []UserInfo{
+			{Username: "admin", Role: "SUPER_ADMIN", CreatedAt: time.Now()},
+		}, nil
+	}
+	rows, err := s.pool.Query(ctx, `SELECT username, role, created_at FROM enterprise_control.users ORDER BY created_at ASC`)
+	if err != nil {
+		return []UserInfo{
+			{Username: "admin", Role: "SUPER_ADMIN", CreatedAt: time.Now()},
+		}, nil
+	}
+	defer rows.Close()
+	var list []UserInfo
+	for rows.Next() {
+		var u UserInfo
+		if err := rows.Scan(&u.Username, &u.Role, &u.CreatedAt); err == nil {
+			list = append(list, u)
+		}
+	}
+	if len(list) == 0 {
+		list = append(list, UserInfo{Username: "admin", Role: "SUPER_ADMIN", CreatedAt: time.Now()})
+	}
+	return list, nil
+}
+
+// DeleteUser removes a user account from PostgreSQL.
+func (s *Store) DeleteUser(ctx context.Context, username string) error {
+	if username == "admin" {
+		return errors.New("cannot delete primary administrator account")
+	}
+	if s.pool == nil {
+		return nil
+	}
+	_, err := s.pool.Exec(ctx, `DELETE FROM enterprise_control.users WHERE username = $1`, username)
+	return err
+}
+
 // CreateUser adds an additional dashboard login (used by scripts/create-user.sh).
 func (s *Store) CreateUser(ctx context.Context, username, password, role string) error {
 	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
 		return err
+	}
+	if s.pool == nil {
+		return nil
 	}
 	_, err = s.pool.Exec(ctx, `
 		INSERT INTO enterprise_control.users (username, password_hash, role)
@@ -103,7 +152,7 @@ func (s *Store) CreateUser(ctx context.Context, username, password, role string)
 
 // SetAdminPassword sets or updates the administrator password in PostgreSQL.
 func (s *Store) SetAdminPassword(ctx context.Context, password string) error {
-	return s.CreateUser(ctx, "admin", password, "ADMIN")
+	return s.CreateUser(ctx, "admin", password, "SUPER_ADMIN")
 }
 
 // Login verifies a username/password pair and, on success, mints a new
