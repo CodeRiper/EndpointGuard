@@ -1,0 +1,13 @@
+{
+  "listen_mode": "network",
+  "http_port": "8080",
+  "grpc_port": "4443",
+  "storage_dir": "C:\\ProgramData\\EndpointGuard\\storage",
+  "log_retention_days": 30,
+  "admin_password": "admin",
+  "clickhouse_dsn": "clickhouse://localhost:9000/endpointguard",
+  "postgres_dsn": "postgres://eg:eg@localhost:5432/endpointguard",
+  "tls_cert_file": "../certs/server.crt",
+  "tls_key_file": "../certs/server.key",
+  "client_ca_file": "../certs/client-ca.crt"
+}

@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>EndpointGuard — Fleet Dashboard</title>
+<script src="./vendor/react.js"></script>
+<script src="./vendor/react-dom.js"></script>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&amp;family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+*{box-sizing:border-box}
+:root{
+  --bg:#F5F6FA; --card:#FFFFFF; --shadow:0 1px 2px rgba(16,24,40,.04),0 6px 16px rgba(16,24,40,.06);
+  --ink:#14151B; --muted:#70758B; --line:rgba(15,17,25,.06);
+  --accent:#5B5FEF; --accent-soft:#EEEFFD;
+  --success:#0FA968; --success-soft:#E6F8EF;
+  --warning:#E08A17; --warning-soft:#FCF0DD;
+  --critical:#F0375A; --critical-soft:#FDE7EC;
+}
+a{color:var(--accent);text-decoration:none}
+.nav a{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:9px;color:#9DA2BD;font:500 14px 'IBM Plex Sans',sans-serif}
+.nav a:hover{background:rgba(255,255,255,.06);color:#F2F3FA}
+.nav a[aria-current="page"]{background:rgba(91,95,239,.22);color:#fff}
+.card{background:var(--card);border-radius:16px;box-shadow:var(--shadow)}
+.btn{font:500 13px 'IBM Plex Sans',sans-serif;padding:8px 13px;border-radius:8px;border:1px solid var(--line);background:#fff;color:var(--ink);cursor:pointer}
+.btn:hover{background:#F7F7FC}
+.btn-primary{background:var(--accent);border-color:var(--accent);color:#fff;box-shadow:0 2px 8px rgba(91,95,239,.35)}
+.btn-primary:hover{background:#4C50D9}
+table{border-collapse:collapse;width:100%}
+th{font:600 10.5px 'IBM Plex Sans',sans-serif;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);text-align:left;padding:0 18px 10px}
+td{font:400 13.5px/1.3 'IBM Plex Sans',sans-serif;color:var(--ink);padding:13px 18px;border-top:1px solid var(--line);vertical-align:middle}
+.mono{font-family:'IBM Plex Mono',monospace;font-size:12.5px}
+.dot{width:7px;height:7px;border-radius:999px;display:inline-block;flex-shrink:0}
+.pill{display:inline-flex;align-items:center;gap:5px;font:600 11.5px 'IBM Plex Sans',sans-serif;padding:3px 9px;border-radius:999px}
+.bar{height:4px;border-radius:999px;background:var(--line);overflow:hidden;width:60px}
+.bar>i{display:block;height:100%;border-radius:999px}
+.logline{font:400 12px/1.9 'IBM Plex Mono',monospace;color:#AEB4D6;white-space:nowrap}
+.logline b{color:#fff;font-weight:500}
+input[type="search"]{font:400 14px 'IBM Plex Sans',sans-serif;padding:9px 14px;border-radius:9px;border:1px solid var(--line);width:240px;background:#fff}
+label.vh{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}
+</style>
+</helmet>
+<div style="min-height:100vh;width:100%;display:flex;font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--ink);">
+
+  <aside style="width:228px;flex-shrink:0;background:linear-gradient(180deg,#121320,#1A1B2B);color:#E8E9F2;display:flex;flex-direction:column;padding:22px 14px;gap:24px;">
+    <div style="display:flex;align-items:center;gap:9px;padding:0 10px;">
+      <span style="width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,#6D71F7,#4347C9);display:flex;align-items:center;justify-content:center;color:#fff;font:700 13px 'Space Grotesk',sans-serif;">EG</span>
+      <span style="font:600 15px 'Space Grotesk',sans-serif;letter-spacing:.01em;">EndpointGuard</span>
+    </div>
+    <nav class="nav" style="display:flex;flex-direction:column;gap:2px;" aria-label="Primary">
+      <a href="#" aria-current="page">Dashboard</a>
+      <a href="#">Endpoints</a>
+      <a href="#">Alerts</a>
+      <a href="#">DLP Events</a>
+      <a href="#">Remote Sessions</a>
+      <a href="#">Vulnerabilities</a>
+      <a href="#">Reports</a>
+      <a href="#">Settings</a>
+    </nav>
+    <div style="margin-top:auto;border-top:1px solid rgba(255,255,255,.08);padding-top:14px;display:flex;align-items:center;gap:10px;">
+      <span style="width:30px;height:30px;border-radius:999px;background:#2C2E45;display:flex;align-items:center;justify-content:center;font:600 13px 'IBM Plex Sans',sans-serif;">A</span>
+      <div style="display:flex;flex-direction:column;line-height:1.3;">
+        <span style="font-size:13px;font-weight:500;">Admin</span>
+        <span style="font-size:11px;color:#8389AC;">Tier 3 · Full Control</span>
+      </div>
+    </div>
+  </aside>
+
+  <main style="flex:1;min-width:0;padding:30px 36px;display:flex;flex-direction:column;gap:20px;">
+
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:20px;flex-wrap:wrap;">
+      <div>
+        <h1 style="margin:0 0 4px;font:600 22px 'Space Grotesk',sans-serif;">Fleet Overview</h1>
+        <p style="margin:0;font-size:13.5px;color:var(--muted);">182 endpoints across 6 sites</p>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <label class="vh" for="s">Search endpoints</label>
+        <input type="search" id="s" placeholder="Search hostname, user, IP…">
+        <button class="btn btn-primary" type="button">+ Enroll Endpoint</button>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;">
+
+      <div class="card" style="padding:18px 20px;">
+        <div style="font-size:12px;color:var(--muted);margin-bottom:8px;">Total Endpoints</div>
+        <div style="font:700 28px 'Space Grotesk',sans-serif;margin-bottom:10px;">182</div>
+        <svg width="100%" height="26" viewBox="0 0 160 26" preserveAspectRatio="none"><polyline points="0,20 24,16 48,18 72,9 96,12 120,5 144,8 160,4" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></polyline></svg>
+      </div>
+
+      <div class="card" style="padding:18px 20px;display:flex;align-items:center;justify-content:space-between;gap:10px;">
+        <div>
+          <div style="font-size:12px;color:var(--muted);margin-bottom:8px;">Online Now</div>
+          <div style="font:700 28px 'Space Grotesk',sans-serif;">164</div>
+          <div style="font-size:12px;color:var(--success);font-weight:600;margin-top:2px;">90% of fleet</div>
+        </div>
+        <svg width="58" height="58" viewBox="0 0 58 58">
+          <circle cx="29" cy="29" r="24" fill="none" stroke="var(--line)" stroke-width="6"></circle>
+          <circle cx="29" cy="29" r="24" fill="none" stroke="var(--success)" stroke-width="6" stroke-linecap="round" stroke-dasharray="150.8 150.8" stroke-dashoffset="15.1" transform="rotate(-90 29 29)"></circle>
+        </svg>
+      </div>
+
+      <div class="card" style="padding:18px 20px;">
+        <div style="font-size:12px;color:var(--muted);margin-bottom:8px;">Active Alerts</div>
+        <div style="font:700 28px 'Space Grotesk',sans-serif;color:var(--critical);margin-bottom:10px;">7</div>
+        <div style="display:flex;height:6px;border-radius:999px;overflow:hidden;">
+          <i style="background:var(--critical);width:43%;"></i>
+          <i style="background:var(--warning);width:34%;"></i>
+          <i style="background:var(--accent);width:23%;"></i>
+        </div>
+      </div>
+
+      <div class="card" style="padding:18px 20px;">
+        <div style="font-size:12px;color:var(--muted);margin-bottom:8px;">Avg CPU Load</div>
+        <div style="font:700 28px 'Space Grotesk',sans-serif;margin-bottom:10px;">18%</div>
+        <svg width="100%" height="26" viewBox="0 0 160 26" preserveAspectRatio="none"><polyline points="0,8 24,14 48,10 72,18 96,14 120,20 144,16 160,19" fill="none" stroke="var(--warning)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></polyline></svg>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1.7fr 1fr;gap:16px;align-items:start;">
+
+      <div class="card" style="overflow:hidden;">
+        <div style="padding:16px 18px 2px;font:600 14.5px 'Space Grotesk',sans-serif;">Endpoints</div>
+        <table>
+          <thead><tr><th>Host</th><th>User</th><th>Status</th><th>OS</th><th>CPU</th><th>Heartbeat</th><th>Actions</th></tr></thead>
+          <tbody>
+            <tr>
+              <td class="mono">FINANCE-WS-04</td><td>CORP\jsmith</td>
+              <td><span class="pill" style="background:var(--success-soft);color:var(--success);"><span class="dot" style="background:var(--success);"></span>Online</span></td>
+              <td>Windows 11 Pro</td>
+              <td><div style="display:flex;align-items:center;gap:8px;"><span>14%</span><div class="bar"><i style="background:var(--success);width:14%;"></i></div></div></td>
+              <td style="color:var(--muted);">Just now</td>
+              <td><button class="btn" type="button" style="padding:5px 10px;">Shell</button> <button class="btn" type="button" style="padding:5px 10px;">Screen</button></td>
+            </tr>
+            <tr>
+              <td class="mono">SALES-LT-11</td><td>CORP\rmehta</td>
+              <td><span class="pill" style="background:var(--success-soft);color:var(--success);"><span class="dot" style="background:var(--success);"></span>Online</span></td>
+              <td>Windows 11 Pro</td>
+              <td><div style="display:flex;align-items:center;gap:8px;"><span>62%</span><div class="bar"><i style="background:var(--warning);width:62%;"></i></div></div></td>
+              <td style="color:var(--muted);">8s ago</td>
+              <td><button class="btn" type="button" style="padding:5px 10px;">Shell</button> <button class="btn" type="button" style="padding:5px 10px;">Screen</button></td>
+            </tr>
+            <tr>
+              <td class="mono">HR-WS-02</td><td>CORP\apillai</td>
+              <td><span class="pill" style="background:var(--success-soft);color:var(--success);"><span class="dot" style="background:var(--success);"></span>Online</span></td>
+              <td>Windows 10 Ent.</td>
+              <td><div style="display:flex;align-items:center;gap:8px;"><span>9%</span><div class="bar"><i style="background:var(--success);width:9%;"></i></div></div></td>
+              <td style="color:var(--muted);">41s ago</td>
+              <td><button class="btn" type="button" style="padding:5px 10px;">Shell</button> <button class="btn" type="button" style="padding:5px 10px;">Screen</button></td>
+            </tr>
+            <tr>
+              <td class="mono">DEV-WS-17</td><td>CORP\kashok</td>
+              <td><span class="pill" style="background:var(--success-soft);color:var(--success);"><span class="dot" style="background:var(--success);"></span>Online</span></td>
+              <td>Windows 11 Pro</td>
+              <td><div style="display:flex;align-items:center;gap:8px;"><span>31%</span><div class="bar"><i style="background:var(--success);width:31%;"></i></div></div></td>
+              <td style="color:var(--muted);">2m ago</td>
+              <td><button class="btn" type="button" style="padding:5px 10px;">Shell</button> <button class="btn" type="button" style="padding:5px 10px;">Screen</button></td>
+            </tr>
+            <tr>
+              <td class="mono">OPS-WS-09</td><td>CORP\tverma</td>
+              <td><span class="pill" style="background:#F1F1F6;color:var(--muted);"><span class="dot" style="background:#B3B6C9;"></span>Offline</span></td>
+              <td>Windows 10 Ent.</td>
+              <td style="color:var(--muted);">—</td>
+              <td style="color:var(--muted);">3h ago</td>
+              <td><button class="btn" type="button" style="padding:5px 10px;" disabled="">Shell</button> <button class="btn" type="button" style="padding:5px 10px;" disabled="">Screen</button></td>
+            </tr>
+          </tbody>
+        </table>
+        <div style="padding:13px 18px;"><a href="#" style="font-size:13px;font-weight:500;">View all 182 endpoints →</a></div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:16px;">
+        <div class="card" style="padding:18px;">
+          <div style="font:600 14.5px 'Space Grotesk',sans-serif;margin-bottom:13px;">Recent Security Events</div>
+          <ul style="list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:13px;">
+            <li style="display:flex;gap:10px;"><span class="dot" style="background:var(--critical);margin-top:5px;"></span><div style="font-size:12.5px;">DLP: card-number pattern on clipboard<div style="color:var(--muted);font-size:11.5px;margin-top:2px;" class="mono">FINANCE-WS-04 · 2m ago</div></div></li>
+            <li style="display:flex;gap:10px;"><span class="dot" style="background:var(--warning);margin-top:5px;"></span><div style="font-size:12.5px;">Flagged process: encoded PowerShell<div style="color:var(--muted);font-size:11.5px;margin-top:2px;" class="mono">SALES-LT-11 · 14m ago</div></div></li>
+            <li style="display:flex;gap:10px;"><span class="dot" style="background:var(--accent);margin-top:5px;"></span><div style="font-size:12.5px;">USB mass-storage device inserted<div style="color:var(--muted);font-size:11.5px;margin-top:2px;" class="mono">HR-WS-02 · 46m ago</div></div></li>
+            <li style="display:flex;gap:10px;"><span class="dot" style="background:var(--warning);margin-top:5px;"></span><div style="font-size:12.5px;">3 known CVEs in software inventory<div style="color:var(--muted);font-size:11.5px;margin-top:2px;" class="mono">DEV-WS-17 · 1h ago</div></div></li>
+          </ul>
+        </div>
+
+        <div style="background:#101119;border-radius:16px;box-shadow:var(--shadow);padding:16px 18px;">
+          <div style="display:flex;align-items:center;gap:7px;margin-bottom:11px;">
+            <span class="dot" style="background:#3DDC84;"></span>
+            <span style="font:600 12.5px 'Space Grotesk',sans-serif;color:#fff;">Live Event Log</span>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:1px;max-height:150px;overflow:hidden;">
+            <div class="logline">14:32:08 <b>FINANCE-WS-04</b> heartbeat ok</div>
+            <div class="logline">14:32:05 <b>dlp</b> match CARD_NUMBER</div>
+            <div class="logline">14:31:58 <b>proc</b> powershell.exe pid=8412</div>
+            <div class="logline">14:31:40 <b>net</b> ESTAB 10.20.4.118:49220</div>
+            <div class="logline">14:31:12 <b>window</b> focus "Outlook"</div>
+            <div class="logline">14:30:55 <b>OPS-WS-09</b> reconnect</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":940}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

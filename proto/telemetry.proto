@@ -1,0 +1,300 @@
+syntax = "proto3";
+package endpointguard.telemetry.v1;
+option go_package = "github.com/yourorg/endpointguard/server/internal/pb;pb";
+
+// ─────────────────────────────────────────────────────────────────────────────
+// EVENT TYPES  (agent → server)
+// ─────────────────────────────────────────────────────────────────────────────
+enum EventType {
+  EVENT_TYPE_UNSPECIFIED    = 0;
+  EVENT_TYPE_PROCESS_START  = 1;
+  EVENT_TYPE_PROCESS_STOP   = 2;
+  EVENT_TYPE_WINDOW_FOCUS   = 3;
+  EVENT_TYPE_SOCKET_SNAPSHOT= 4;
+  EVENT_TYPE_SYSTEM_METRIC  = 5;
+  EVENT_TYPE_DLP_CLIPBOARD  = 6;
+  EVENT_TYPE_USB_DEVICE     = 7;
+}
+
+message ProcessEvent {
+  uint32 process_id        = 1;
+  uint32 parent_process_id = 2;
+  string image_file_path   = 3;
+  string command_line      = 4;
+  string user_sid          = 5;
+  string user_name         = 6;
+  uint32 session_id        = 7;
+  int64  start_time_unix_ms= 8;
+  int64  exit_time_unix_ms = 9;
+  int32  exit_code         = 10;
+  string integrity_level   = 11;  // Low/Medium/High/System
+}
+
+message WindowEvent {
+  string window_title          = 1;
+  string process_image         = 2;
+  uint32 process_id            = 3;
+  bool   is_idle                = 4;
+  uint64 idle_seconds           = 5;
+  int64  observed_time_unix_ms  = 6;
+  string document_path          = 7;  // e.g. file open in Word/Adobe
+}
+
+message SocketEntry {
+  string local_addr   = 1;
+  uint32 local_port   = 2;
+  string remote_addr  = 3;
+  uint32 remote_port  = 4;
+  string state        = 5;
+  uint32 owning_pid   = 6;
+  string protocol     = 7;
+}
+
+message SocketSnapshotEvent {
+  repeated SocketEntry sockets               = 1;
+  int64                captured_time_unix_ms = 2;
+}
+
+message SystemMetricEvent {
+  double cpu_usage_percent      = 1;
+  uint64 memory_used_bytes      = 2;
+  uint64 memory_total_bytes     = 3;
+  uint64 disk_used_bytes        = 4;
+  uint64 disk_total_bytes       = 5;
+  float  battery_percent        = 6;
+  bool   is_ac_connected        = 7;
+  uint64 screen_on_time_total_s = 8;
+  uint64 active_dwell_time_s    = 9;
+  uint64 idle_time_s            = 10;
+}
+
+message ClipboardDlpEvent {
+  string source_process        = 1;
+  string match_category        = 2;
+  uint32 match_count           = 3;
+  int64  observed_time_unix_ms = 4;
+}
+
+message UsbDeviceEvent {
+  string volume_label          = 1;
+  string serial_number         = 2;
+  string hardware_path         = 3;
+  string action                = 4;  // ARRIVAL / REMOVAL
+  int64  observed_time_unix_ms = 5;
+}
+
+message TelemetryEvent {
+  string    event_id           = 1;
+  string    agent_id           = 2;
+  string    hostname           = 3;
+  int64     timestamp_unix_ms  = 4;
+  EventType event_type         = 5;
+  oneof payload {
+    ProcessEvent        process        = 10;
+    WindowEvent         window         = 11;
+    SocketSnapshotEvent socket_snapshot= 12;
+    SystemMetricEvent   metric         = 13;
+    ClipboardDlpEvent   clipboard_dlp  = 14;
+    UsbDeviceEvent      usb_device     = 15;
+  }
+}
+
+message TelemetryBatch {
+  string                  agent_id = 1;
+  repeated TelemetryEvent events   = 2;
+}
+
+message IngestAck {
+  uint32 accepted_count  = 1;
+  string server_time_iso = 2;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// COMMAND TYPES  (server → agent, result agent → server)
+// Small, latency-sensitive actions only. Bulk telemetry, interactive shell
+// I/O and liveness pings each get their own service/stream below so none of
+// them can queue behind each other on the wire.
+// ─────────────────────────────────────────────────────────────────────────────
+message LockCommand    {}
+message SignOutCommand {}
+
+message PopupCommand {
+  string title   = 1;
+  string message = 2;
+}
+
+// Covers BOTH shutdown and restart — `action` picks which, everything else
+// (countdown, on-screen message, cancel) is shared behaviour.
+enum PowerActionType {
+  POWER_ACTION_UNSPECIFIED = 0;
+  POWER_ACTION_SHUTDOWN    = 1;
+  POWER_ACTION_RESTART     = 2;
+}
+
+message PowerActionCommand {
+  PowerActionType action           = 1;
+  uint32          delay_seconds    = 2;  // countdown shown to the user before it fires
+  string          message          = 3;  // text shown in the on-screen notice
+  bool            force_apps_closed= 4;
+  string          reason           = 5;  // audit trail
+}
+
+// Cancels a previously-issued, still-pending shutdown/restart.
+message CancelPowerActionCommand {}
+
+message CommandEnvelope {
+  string command_id = 1;
+  string agent_id   = 2;
+  oneof command {
+    LockCommand               lock                = 10;
+    SignOutCommand             sign_out            = 11;
+    PopupCommand                popup               = 12;
+    PowerActionCommand          power_action        = 13;
+    CancelPowerActionCommand    cancel_power_action = 14;
+  }
+}
+
+message ActionResult {
+  bool   success = 1;
+  string error   = 2;
+}
+
+message CommandResult {
+  string command_id = 1;
+  string agent_id   = 2;
+  oneof result {
+    ActionResult action = 10;
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// INTERACTIVE SHELL  (own service — keystrokes must never wait behind a
+// telemetry flush or a queued command)
+// ─────────────────────────────────────────────────────────────────────────────
+message ShellStart {
+  string shell_id = 1;
+  uint32 cols     = 2;
+  uint32 rows     = 3;
+}
+
+message ShellInput {
+  string shell_id = 1;
+  bytes  data     = 2;
+}
+
+message ShellResize {
+  string shell_id = 1;
+  uint32 cols     = 2;
+  uint32 rows     = 3;
+}
+
+message ShellClose {
+  string shell_id = 1;
+}
+
+// server → agent
+message ShellServerMsg {
+  oneof msg {
+    ShellStart  start  = 1;
+    ShellInput  input  = 2;
+    ShellResize resize = 3;
+    ShellClose  close  = 4;
+  }
+}
+
+message ShellOutput {
+  string shell_id = 1;
+  bytes  data     = 2;
+}
+
+message ShellExited {
+  string shell_id  = 1;
+  int32  exit_code = 2;
+}
+
+// agent → server
+message ShellClientMsg {
+  string agent_id = 1;
+  oneof msg {
+    ShellOutput output  = 2;
+    ShellExited exited  = 3;
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// HEARTBEAT  (own service — a 2-second liveness ping that must never be
+// delayed by anything else on the connection)
+// ─────────────────────────────────────────────────────────────────────────────
+message Ping {
+  int64 client_time_unix_ms = 1;
+}
+
+message Pong {
+  int64 client_time_unix_ms = 1;  // echoed back so the agent can compute RTT
+  int64 server_time_unix_ms = 2;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SCREEN STREAMING  (reserved — not implemented yet, service registered so
+// the wire contract exists; StreamScreen currently returns UNIMPLEMENTED)
+// ─────────────────────────────────────────────────────────────────────────────
+message ScreenStart {
+  uint32 target_fps = 1;
+}
+
+message ScreenStop {}
+
+message ScreenFrameChunk {
+  bytes  data        = 1;
+  bool   is_keyframe  = 2;
+  uint32 sequence     = 3;
+}
+
+message ScreenClientMsg {
+  oneof msg {
+    ScreenFrameChunk frame = 1;
+  }
+}
+
+message ScreenServerMsg {
+  oneof msg {
+    ScreenStart start = 1;
+    ScreenStop  stop  = 2;
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SERVICES
+//
+// All five are multiplexed over ONE outbound mTLS TCP connection via HTTP/2
+// (the agent dials once; gRPC opens a new HTTP/2 stream per RPC on that same
+// connection) — one TLS handshake, no extra exposed ports, and each kind of
+// traffic gets its own independent stream so none can block another:
+//   - IngestionService: bulk telemetry, can be bursty/slow
+//   - CommandService:   small one-shot actions (lock/power/popup)
+//   - ShellService:     interactive terminal, needs to stay snappy
+//   - HeartbeatService: 2s ping/pong, used to detect a dead link fast
+//   - ScreenService:    reserved for future screen streaming
+// ─────────────────────────────────────────────────────────────────────────────
+service IngestionService {
+  rpc StreamTelemetry(stream TelemetryBatch) returns (stream IngestAck);
+}
+
+service CommandService {
+  // Agent dials; server pushes CommandEnvelope, agent returns CommandResult.
+  rpc StreamCommands(stream CommandResult) returns (stream CommandEnvelope);
+}
+
+service ShellService {
+  // Agent dials; server pushes ShellServerMsg, agent returns ShellClientMsg.
+  rpc StreamShell(stream ShellClientMsg) returns (stream ShellServerMsg);
+}
+
+service HeartbeatService {
+  rpc StreamHeartbeat(stream Ping) returns (stream Pong);
+}
+
+service ScreenService {
+  // Reserved. Not implemented — returns UNIMPLEMENTED.
+  rpc StreamScreen(stream ScreenClientMsg) returns (stream ScreenServerMsg);
+}

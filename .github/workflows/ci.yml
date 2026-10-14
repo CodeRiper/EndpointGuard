@@ -1,0 +1,59 @@
+name: CI Build & Verify
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  server-build:
+    name: Build Go Control Server
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+          cache-dependency-path: server/go.sum
+
+      - name: Verify Go dependencies
+        run: |
+          cd server
+          go mod verify
+
+      - name: Build eg-server
+        run: |
+          cd server
+          go build -v -o eg-server ./cmd/server
+
+  agent-check:
+    name: Check Rust Agent
+    runs-on: windows-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            agent/target/
+          key: ${{ runner.os }}-cargo-${{ hashFiles('agent/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
+
+      - name: Cargo Check
+        run: |
+          cd agent
+          cargo check

@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EndpointGuard — Server Setup & Configuration</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #090d16;
+      --card-bg: rgba(17, 24, 39, 0.75);
+      --card-border: rgba(56, 189, 248, 0.2);
+      --card-border-focus: #38bdf8;
+      --text: #f3f4f6;
+      --text-muted: #9ca3af;
+      --accent-cyan: #00e5ff;
+      --accent-blue: #3b82f6;
+      --accent-emerald: #10b981;
+      --accent-rose: #f43f5e;
+      --input-bg: #0b1120;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background-color: var(--bg);
+      background-image: 
+        radial-gradient(at 0% 0%, rgba(56, 189, 248, 0.08) 0px, transparent 50%),
+        radial-gradient(at 100% 100%, rgba(16, 185, 129, 0.05) 0px, transparent 50%);
+      color: var(--text);
+      font-family: 'Inter', -apple-system, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px 16px;
+    }
+    .setup-container {
+      width: 100%;
+      max-width: 680px;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      backdrop-filter: blur(20px);
+      border-radius: 16px;
+      padding: 36px 40px;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7), 0 0 30px rgba(0, 229, 255, 0.05);
+    }
+    .brand-header {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 24px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .brand-icon {
+      width: 44px;
+      height: 44px;
+      background: linear-gradient(135deg, rgba(0, 229, 255, 0.2), rgba(59, 130, 246, 0.2));
+      border: 1px solid var(--accent-cyan);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      color: var(--accent-cyan);
+    }
+    .brand-title {
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      background: linear-gradient(to right, #ffffff, #94a3b8);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .brand-subtitle {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+    .section-title {
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      font-weight: 700;
+      color: var(--accent-cyan);
+      margin: 22px 0 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .form-group {
+      margin-bottom: 18px;
+    }
+    label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: #e2e8f0;
+      margin-bottom: 6px;
+    }
+    .helper-text {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+    input[type="text"], input[type="password"], select {
+      width: 100%;
+      background: var(--input-bg);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 8px;
+      padding: 10px 14px;
+      color: #fff;
+      font-size: 14px;
+      font-family: inherit;
+      outline: none;
+      transition: all 0.2s ease;
+    }
+    input[type="text"]:focus, input[type="password"]:focus, select:focus {
+      border-color: var(--accent-cyan);
+      box-shadow: 0 0 0 3px rgba(0, 229, 255, 0.15);
+    }
+    .mono { font-family: 'JetBrains Mono', monospace; }
+    
+    .radio-card-group {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 8px;
+    }
+    .radio-card {
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 10px;
+      padding: 14px 16px;
+      cursor: pointer;
+      background: rgba(15, 23, 42, 0.5);
+      transition: all 0.2s ease;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .radio-card.active {
+      border-color: var(--accent-cyan);
+      background: rgba(0, 229, 255, 0.06);
+    }
+    .radio-card-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .radio-card-desc {
+      font-size: 12px;
+      color: var(--text-muted);
+      line-height: 1.4;
+    }
+    .badge-ip {
+      display: inline-block;
+      background: rgba(16, 185, 129, 0.15);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      color: #34d399;
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-family: 'JetBrains Mono', monospace;
+      margin-top: 4px;
+    }
+    .storage-info-box {
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 8px;
+      padding: 12px 14px;
+      font-size: 12px;
+      color: #94a3b8;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 8px;
+    }
+    .btn-submit {
+      width: 100%;
+      background: linear-gradient(135deg, #0284c7, #0284c7 30%, #00e5ff);
+      color: #ffffff;
+      font-weight: 600;
+      font-size: 15px;
+      border: none;
+      border-radius: 10px;
+      padding: 14px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      margin-top: 28px;
+      transition: all 0.2s ease;
+      box-shadow: 0 4px 14px rgba(2, 132, 199, 0.4);
+    }
+    .btn-submit:hover {
+      filter: brightness(1.1);
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px rgba(0, 229, 255, 0.35);
+    }
+    .status-msg {
+      margin-top: 14px;
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-size: 13px;
+      display: none;
+    }
+    .status-msg.success {
+      background: rgba(16, 185, 129, 0.15);
+      border: 1px solid rgba(16, 185, 129, 0.4);
+      color: #34d399;
+    }
+    .status-msg.error {
+      background: rgba(244, 63, 94, 0.15);
+      border: 1px solid rgba(244, 63, 94, 0.4);
+      color: #fb7185;
+    }
+  </style>
+</head>
+<body>
+  <div class="setup-container">
+    <div class="brand-header">
+      <div class="brand-icon">🛡️</div>
+      <div>
+        <h1 class="brand-title">EndpointGuard Server Setup</h1>
+        <p class="brand-subtitle">Configure administrator security, network binding, and log storage</p>
+      </div>
+    </div>
+
+    <form id="setupForm" onsubmit="handleSave(event)">
+      <!-- STEP 1: ADMIN SECURITY -->
+      <div class="section-title"><span>🔑</span> Step 1: Admin Dashboard Password</div>
+      <div class="form-group">
+        <label for="adminPassword">Administrator Password</label>
+        <input type="password" id="adminPassword" placeholder="Enter new admin password (leave empty to keep current)" autocomplete="new-password">
+        <p class="helper-text">Used to log in to the web console with username <strong>admin</strong>.</p>
+      </div>
+
+      <!-- STEP 2: NETWORK BINDING -->
+      <div class="section-title"><span>🌐</span> Step 2: Web GUI & Network Access</div>
+      <div class="radio-card-group">
+        <div class="radio-card" id="cardLocal" onclick="selectBind('localhost')">
+          <div class="radio-card-title">
+            <input type="radio" name="bindRadio" id="bindLocal" value="localhost">
+            Localhost Only
+          </div>
+          <div class="radio-card-desc">Restricted to 127.0.0.1. Accessible only from this local computer.</div>
+        </div>
+
+        <div class="radio-card active" id="cardNetwork" onclick="selectBind('network')">
+          <div class="radio-card-title">
+            <input type="radio" name="bindRadio" id="bindNetwork" value="network" checked>
+            Network / LAN
+          </div>
+          <div class="radio-card-desc">Binds to 0.0.0.0. Accessible by remote browsers and agent endpoints across your network.</div>
+        </div>
+      </div>
+      <div style="margin-top: 8px;" id="localIpsContainer">
+        <span class="helper-text">Detected Server IP(s):</span>
+        <div id="ipBadges" style="margin-top: 4px; display: flex; flex-wrap: wrap; gap: 6px;"></div>
+      </div>
+
+      <!-- STEP 3: STORAGE SETUP -->
+      <div class="section-title"><span>💾</span> Step 3: Log & Data Storage Setup</div>
+      <div class="form-group">
+        <label for="storageDir">Storage Directory Path</label>
+        <input type="text" id="storageDir" class="mono" placeholder="C:\ProgramData\EndpointGuard\storage or /var/log/endpointguard">
+        <p class="helper-text">Where server logs, audit trail, agent telemetry, and uploaded files are saved.</p>
+      </div>
+
+      <div class="form-group">
+        <label for="logRetention">Log Retention Policy</label>
+        <select id="logRetention">
+          <option value="14">Retain logs for 14 Days</option>
+          <option value="30" selected>Retain logs for 30 Days (Recommended)</option>
+          <option value="60">Retain logs for 60 Days</option>
+          <option value="90">Retain logs for 90 Days</option>
+          <option value="0">Keep all logs indefinitely (Unlimited)</option>
+        </select>
+      </div>
+
+      <div class="storage-info-box" id="storageInfo">
+        <span>Disk Space Available: <strong id="freeDisk">Calculating...</strong></span>
+        <span>Storage Size: <strong id="usedDisk">0 MB</strong></span>
+      </div>
+
+      <!-- STEP 4: PORTS -->
+      <div class="section-title"><span>⚡</span> Step 4: Ports Configuration</div>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+        <div class="form-group">
+          <label for="httpPort">Web Dashboard Port</label>
+          <input type="text" id="httpPort" class="mono" value="8080">
+        </div>
+        <div class="form-group">
+          <label for="grpcPort">Agent Tunnel Port (gRPC)</label>
+          <input type="text" id="grpcPort" class="mono" value="4443">
+        </div>
+      </div>
+
+      <button type="submit" class="btn-submit" id="btnSubmit">
+        <span>🚀</span> Save Configuration & Launch Dashboard
+      </button>
+
+      <div class="status-msg" id="statusMsg"></div>
+    </form>
+  </div>
+
+  <script>
+    let currentBind = 'network';
+
+    function selectBind(mode) {
+      currentBind = mode;
+      document.getElementById('cardLocal').classList.toggle('active', mode === 'localhost');
+      document.getElementById('cardNetwork').classList.toggle('active', mode === 'network');
+      document.getElementById('bindLocal').checked = (mode === 'localhost');
+      document.getElementById('bindNetwork').checked = (mode === 'network');
+    }
+
+    async function loadConfig() {
+      try {
+        const res = await fetch('/api/system/config');
+        if (res.ok) {
+          const data = await res.json();
+          if (data.listen_mode) selectBind(data.listen_mode);
+          if (data.storage_dir) document.getElementById('storageDir').value = data.storage_dir;
+          if (data.http_port) document.getElementById('httpPort').value = data.http_port;
+          if (data.grpc_port) document.getElementById('grpcPort').value = data.grpc_port;
+          if (data.log_retention_days !== undefined) document.getElementById('logRetention').value = data.log_retention_days;
+
+          const ipBadges = document.getElementById('ipBadges');
+          ipBadges.innerHTML = '';
+          (data.local_ips || []).forEach(ip => {
+            const b = document.createElement('span');
+            b.className = 'badge-ip';
+            b.textContent = `http://${ip}:${data.http_port || 8080}`;
+            ipBadges.appendChild(b);
+          });
+        }
+
+        const sRes = await fetch('/api/system/storage');
+        if (sRes.ok) {
+          const sData = await sRes.json();
+          if (sData.free_disk_bytes) {
+            const gb = (sData.free_disk_bytes / (1024 * 1024 * 1024)).toFixed(1);
+            document.getElementById('freeDisk').textContent = `${gb} GB free`;
+          }
+          if (sData.total_size_bytes !== undefined) {
+            const mb = (sData.total_size_bytes / (1024 * 1024)).toFixed(2);
+            document.getElementById('usedDisk').textContent = `${mb} MB used`;
+          }
+        }
+      } catch (e) {
+        console.error('Failed to load system config', e);
+      }
+    }
+
+    async function handleSave(e) {
+      e.preventDefault();
+      const btn = document.getElementById('btnSubmit');
+      const msg = document.getElementById('statusMsg');
+      btn.disabled = true;
+      btn.innerHTML = '<span>⏳</span> Saving Configuration...';
+      msg.style.display = 'none';
+
+      const payload = {
+        admin_password: document.getElementById('adminPassword').value.trim(),
+        listen_mode: currentBind,
+        storage_dir: document.getElementById('storageDir').value.trim(),
+        http_port: document.getElementById('httpPort').value.trim(),
+        grpc_port: document.getElementById('grpcPort').value.trim(),
+        log_retention_days: parseInt(document.getElementById('logRetention').value, 10)
+      };
+
+      try {
+        const res = await fetch('/api/system/config', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        if (res.ok) {
+          msg.className = 'status-msg success';
+          msg.textContent = '✓ Configuration saved successfully! Redirecting to Dashboard...';
+          msg.style.display = 'block';
+          setTimeout(() => {
+            window.location.href = '/';
+          }, 1500);
+        } else {
+          const err = await res.json().catch(() => ({ error: 'Failed to save configuration' }));
+          msg.className = 'status-msg error';
+          msg.textContent = 'Error: ' + (err.error || 'Failed to save configuration');
+          msg.style.display = 'block';
+          btn.disabled = false;
+          btn.innerHTML = '<span>🚀</span> Save Configuration & Launch Dashboard';
+        }
+      } catch (err) {
+        msg.className = 'status-msg error';
+        msg.textContent = 'Connection error: ' + err.message;
+        msg.style.display = 'block';
+        btn.disabled = false;
+        btn.innerHTML = '<span>🚀</span> Save Configuration & Launch Dashboard';
+      }
+    }
+
+    window.addEventListener('DOMContentLoaded', loadConfig);
+  </script>
+</body>
+</html>

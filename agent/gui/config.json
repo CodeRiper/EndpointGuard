@@ -1,0 +1,6 @@
+{
+  "server_addr": "https://172.17.119.17:4443",
+  "client_cert": "certs/client.crt",
+  "client_key": "certs/client.key",
+  "server_ca": "certs/ca.crt"
+}

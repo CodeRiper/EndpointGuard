@@ -1,0 +1,55 @@
+# Binaries and compiled executables
+*.exe
+*.dll
+*.so
+*.dylib
+*.pdb
+*.bin
+eg-server-linux
+eg-testclient-linux
+server/eg-server-linux
+server/eg-server.exe
+server/eg-testclient-linux
+server/eg-testclient.exe
+server/KashAgent.exe
+server/EndpointGuardServerApp.exe
+server/EndpointGuard-Server-Setup.exe
+
+# Rust build artifacts
+target/
+agent/target/
+**/*.rs.bk
+
+# .NET / C# build artifacts
+[Bb]in/
+[Oo]bj/
+*.user
+*.suo
+.vs/
+
+# Runtime storage, logs, and databases
+storage/
+**/storage/
+C*
+*.log
+cookie.txt
+
+# Scratch scripts and temporary test files
+scratch/
+scratch_*
+scratch_desktop.jpg
+
+# Cryptographic private keys (never commit private keys to GitHub!)
+*.key
+*.csr
+*.srl
+certs/*.key
+certs/*.csr
+certs/*.srl
+
+# OS and IDE files
+.DS_Store
+Thumbs.db
+.idea/
+*.swp
+*.bak
