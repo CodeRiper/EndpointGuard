@@ -25,11 +25,13 @@ jobs:
 
       - name: Build Linux Binary
         run: |
+          mkdir -p dist
           cd server
           GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -ldflags="-s -w" -o ../dist/eg-server-linux ./cmd/server
 
       - name: Build Windows Binary
         run: |
+          mkdir -p dist
           cd server
           GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -ldflags="-s -w" -o ../dist/eg-server.exe ./cmd/server
 

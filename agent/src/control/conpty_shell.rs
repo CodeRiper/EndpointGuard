@@ -48,20 +48,19 @@ pub fn spawn_shell(
 #[cfg(windows)]
 mod win {
     use super::*;
-    use std::io::{self, Read, Write};
+    
     use std::ptr;
     use windows::core::PWSTR;
     use windows::Win32::Foundation::{CloseHandle, HANDLE};
     use windows::Win32::System::Console::{
-        ClosePseudoConsole, CreatePseudoConsole, ResizePseudoConsole, COORD, HPCON,
+        ClosePseudoConsole, CreatePseudoConsole, ResizePseudoConsole, COORD,
     };
     use windows::Win32::System::Pipes::CreatePipe;
     use windows::Win32::System::Threading::{
         CreateProcessW, DeleteProcThreadAttributeList,
-        InitializeProcThreadAttributeList, UpdateProcThreadAttribute,
-        WaitForSingleObject, EXTENDED_STARTUPINFO_PRESENT,
+        InitializeProcThreadAttributeList, UpdateProcThreadAttribute, EXTENDED_STARTUPINFO_PRESENT,
         PROCESS_INFORMATION, PROC_THREAD_ATTRIBUTE_PSEUDOCONSOLE,
-        STARTUPINFOEXW, LPPROC_THREAD_ATTRIBUTE_LIST, INFINITE,
+        STARTUPINFOEXW, LPPROC_THREAD_ATTRIBUTE_LIST,
     };
 
     pub fn run_shell(
@@ -144,7 +143,7 @@ mod win {
             let out_pipe = pipe_out_read;
 
             std::thread::spawn(move || {
-                let mut handle = windows::Win32::Foundation::HANDLE(out_pipe.0);
+                let handle = windows::Win32::Foundation::HANDLE(out_pipe.0);
                 let mut buf = [0u8; 4096];
                 loop {
                     let mut read = 0u32;

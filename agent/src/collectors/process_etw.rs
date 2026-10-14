@@ -15,8 +15,6 @@ use std::sync::OnceLock;
 use tokio::sync::mpsc::Sender;
 use uuid::Uuid;
 
-#[cfg(windows)]
-use std::sync::mpsc::SyncSender;
 
 /// Starts the ETW listener thread and feeds events into `tx`.
 pub async fn run(tx: Sender<TelemetryEvent>, agent_id: String) {
@@ -98,22 +96,19 @@ static ETW_ASYNC_TX: OnceLock<tokio::sync::mpsc::Sender<ProcessRecord>> = OnceLo
 #[cfg(windows)]
 mod win {
     use super::*;
-    use std::ffi::c_void;
+    
     use windows::core::{GUID, PCWSTR, PWSTR};
     use windows::Win32::System::Diagnostics::Etw::{
         CloseTrace, EnableTraceEx2, OpenTraceW, ProcessTrace,
-        StartTraceW, StopTraceW,
-        EVENT_ENABLE_PROPERTY_SID, EVENT_RECORD, EVENT_TRACE_CONTROL_STOP,
+        StartTraceW, StopTraceW, EVENT_RECORD,
         EVENT_TRACE_FLAG_PROCESS, EVENT_TRACE_LOGFILEW,
         EVENT_TRACE_PROPERTIES, EVENT_TRACE_REAL_TIME_MODE,
         PROCESS_TRACE_MODE_EVENT_RECORD, PROCESS_TRACE_MODE_REAL_TIME,
         WNODE_FLAG_TRACED_GUID,
         TdhGetEventInformation, TdhGetProperty,
         TRACE_EVENT_INFO, PROPERTY_DATA_DESCRIPTOR,
-        TDH_CONTEXT, TDH_INTYPE_UNICODESTRING, TDH_INTYPE_UINT32,
-        TDH_INTYPE_WBEMSID,
     };
-    use windows::Win32::Foundation::{ERROR_SUCCESS, FILETIME};
+    use windows::Win32::Foundation::ERROR_SUCCESS;
 
     const SESSION_NAME: &str = "EndpointGuard-KernelProcess\0";
     const PROVIDER_GUID: GUID = GUID {
@@ -391,8 +386,6 @@ mod win {
     }
 }
 
-#[cfg(windows)]
-pub use win::etw_thread_main;
 
 #[cfg(not(windows))]
 pub fn etw_thread_main() {}

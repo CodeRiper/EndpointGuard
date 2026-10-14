@@ -192,7 +192,7 @@ fn usb_watch_loop(tx: Sender<TelemetryEvent>, agent_id: String) {
             HWND_MESSAGE, None, None, None,
         );
 
-        let mut filter = DEV_BROADCAST_DEVICEINTERFACE_W {
+        let filter = DEV_BROADCAST_DEVICEINTERFACE_W {
             dbcc_size:       std::mem::size_of::<DEV_BROADCAST_DEVICEINTERFACE_W>() as u32,
             dbcc_devicetype: DBT_DEVTYP_DEVICEINTERFACE.0,
             dbcc_classguid:  guid_volume,

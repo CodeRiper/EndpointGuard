@@ -28,7 +28,7 @@ jobs:
       - name: Build eg-server
         run: |
           cd server
-          go build -v -o eg-server ./cmd/server
+          CGO_ENABLED=0 go build -v -o eg-server ./cmd/server
 
   agent-check:
     name: Check Rust Agent
@@ -39,6 +39,11 @@ jobs:
 
       - name: Set up Rust toolchain
         uses: dtolnay/rust-toolchain@stable
+
+      - name: Install Protoc
+        uses: arduino/setup-protoc@v3
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Cache cargo
         uses: actions/cache@v4

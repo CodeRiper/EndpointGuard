@@ -5,8 +5,10 @@
 *.dylib
 *.pdb
 *.bin
+eg-server
 eg-server-linux
 eg-testclient-linux
+server/eg-server
 server/eg-server-linux
 server/eg-server.exe
 server/eg-testclient-linux
@@ -28,8 +30,9 @@ agent/target/
 .vs/
 
 # Runtime storage, logs, and databases
-storage/
-**/storage/
+/storage/
+server/storage/
+!server/internal/storage/
 C*
 *.log
 cookie.txt

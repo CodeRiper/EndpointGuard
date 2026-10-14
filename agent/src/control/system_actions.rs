@@ -332,7 +332,7 @@ pub fn inject_key_combo(combo: &str) -> Result<()> {
     unsafe {
         use windows::Win32::UI::Input::KeyboardAndMouse::{
             keybd_event, KEYEVENTF_KEYUP, VK_LWIN, VK_CONTROL, VK_MENU, VK_DELETE, VK_TAB,
-            VK_RETURN, VK_BACK, VK_ESCAPE, VK_SPACE, VK_UP, VK_DOWN, VK_LEFT, VK_RIGHT,
+            VK_RETURN, VK_BACK, VK_ESCAPE, VK_SPACE, VK_UP, VK_DOWN,
         };
         match combo {
             "Win+R" => {
