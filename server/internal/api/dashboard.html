@@ -459,6 +459,23 @@
       border-color: var(--accent);
       font-weight: 600;
     }
+  
+    .fleet-side-card {
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      border: 1px solid var(--line);
+      cursor: pointer;
+    }
+    .fleet-side-card:hover {
+      transform: translateY(-2px);
+      border-color: var(--accent);
+      box-shadow: 0 4px 12px rgba(109, 113, 247, 0.15);
+    }
+    .fleet-side-card.active {
+      border-color: var(--accent) !important;
+      background: var(--accent-soft) !important;
+      box-shadow: 0 0 0 1px var(--accent);
+    }
+
   </style>
 </head>
 <body>
@@ -918,7 +935,13 @@
         <button class="tab" id="tab-btn-terminal" onclick="setDetailTab('terminal')">Terminal (ConPTY)</button>
       </nav>
 
-      <!-- TAB 1: OVERVIEW -->
+      <!-- 2-COLUMN DETAIL LAYOUT WITH RIGHT-HAND FLEET ENDPOINTS PANEL -->
+      <div style="display: flex; gap: 22px; align-items: flex-start; width: 100%;">
+        
+        <!-- LEFT COLUMN: Main Tab Content -->
+        <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 18px;">
+
+          <!-- TAB 1: OVERVIEW -->
       <div id="tab-content-overview" style="display: flex; flex-direction: column; gap: 18px;">
         
         <!-- 4 Hardware Metrics Cards -->
@@ -1196,22 +1219,32 @@
           </div>
         </div>
 
+        <!-- Search and Quick Category Filter Toolbar -->
+        <div class="card" style="padding: 14px 18px; display: flex; gap: 12px; align-items: center; justify-content: space-between; flex-wrap: wrap;">
+          <div style="flex: 1; min-width: 250px; display: flex; align-items: center; gap: 8px; background: var(--card-inner); border: 1px solid var(--line); border-radius: 8px; padding: 6px 12px;">
+            <span style="font-size: 14px; color: var(--muted);">🔍</span>
+            <input type="text" id="browser-search-input" oninput="searchBrowserView(this.value)" placeholder="Search workspace, domain, website title, application, PID..." style="flex: 1; background: transparent; border: none; outline: none; color: var(--ink); font-size: 13px;">
+            <button class="btn btn-sm" onclick="clearBrowserSearch()" style="padding: 2px 8px; font-size: 11px;">Clear</button>
+          </div>
+          <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
+            <button class="btn btn-sm btn-primary" id="btn-browser-filter-all" onclick="filterBrowserView('ALL')">All Activity</button>
+            <button class="btn btn-sm" id="btn-browser-filter-web" onclick="filterBrowserView('WEB')">🌐 Websites</button>
+            <button class="btn btn-sm" id="btn-browser-filter-workspaces" onclick="filterBrowserView('WORKSPACES')">📁 Workspaces</button>
+            <button class="btn btn-sm" id="btn-browser-filter-chat" onclick="filterBrowserView('CHAT')">💬 Chat &amp; Comms</button>
+            <button class="btn btn-sm" id="btn-browser-filter-apps" onclick="filterBrowserView('APPS')">💻 Desktop Apps</button>
+            <button class="btn btn-sm" id="btn-browser-filter-incognito" onclick="filterBrowserView('INCOGNITO')" style="color: var(--critical);">🕵️ Incognito (<span id="incognito-filter-count">0</span>)</button>
+            <button class="btn btn-sm" onclick="fetchTabEvents('browser')">↻ Refresh</button>
+          </div>
+        </div>
+
         <!-- Full Window Focus & Dwell Chronological Table -->
         <div class="card" style="overflow: hidden;">
-          <div style="padding: 16px 20px; border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+          <div style="padding: 14px 20px; border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
             <div>
-              <h2 style="font: 600 16px 'Space Grotesk', sans-serif;">Active Engagement &amp; Dwell Space Timeline</h2>
-              <p style="font-size: 12px; color: var(--muted); margin-top: 2px;">Real-time ETW correlates window station focus with dwell duration</p>
+              <h2 style="font: 600 15.5px 'Space Grotesk', sans-serif;">Active Engagement &amp; Dwell Space Timeline</h2>
+              <p style="font-size: 12px; color: var(--muted); margin-top: 2px;">Real-time ETW correlates window station focus with dwell duration · Private chats sanitized</p>
             </div>
-            <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
-              <span style="font-size: 12px; font-weight: 600; color: var(--muted); margin-right: 4px;">Filter:</span>
-              <button class="btn btn-sm btn-primary" id="btn-browser-filter-all" onclick="filterBrowserView('ALL')">All Activity</button>
-              <button class="btn btn-sm" id="btn-browser-filter-web" onclick="filterBrowserView('WEB')">Websites &amp; Browsers</button>
-              <button class="btn btn-sm" id="btn-browser-filter-apps" onclick="filterBrowserView('APPS')">Applications (Non-Browser)</button>
-              <button class="btn btn-sm" id="btn-browser-filter-workspaces" onclick="filterBrowserView('WORKSPACES')">Workspaces</button>
-              <button class="btn btn-sm" id="btn-browser-filter-incognito" onclick="filterBrowserView('INCOGNITO')" style="color: var(--critical);">🕵️ Incognito Only (<span id="incognito-filter-count">0</span>)</button>
-              <button class="btn btn-sm" onclick="fetchTabEvents('browser')">Refresh Activity</button>
-            </div>
+            <div id="browser-table-count" style="font-size: 12px; color: var(--muted);" class="mono">Showing all events</div>
           </div>
           <table>
             <thead>
@@ -1562,6 +1595,45 @@
           </div>
         </div>
       </div>
+
+        </div><!-- END LEFT COLUMN -->
+
+        <!-- RIGHT COLUMN: Fleet Endpoints Selector (Inventory Style) -->
+        <div id="fleet-side-panel" class="card" style="width: 310px; flex-shrink: 0; padding: 16px; display: flex; flex-direction: column; gap: 12px; position: sticky; top: 75px; max-height: calc(100vh - 95px); overflow-y: auto;">
+          <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--line); padding-bottom: 10px;">
+            <div>
+              <div style="font: 700 12.5px 'Space Grotesk', sans-serif; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink); display: flex; align-items: center; gap: 6px;">
+                <span>🖥️</span> Connected Fleet
+              </div>
+              <div style="font-size: 11px; color: var(--muted); margin-top: 1px;">Switch machine or view all</div>
+            </div>
+            <span id="side-panel-online-count" class="pill pill-success" style="font-size: 10.5px;">1 Online</span>
+          </div>
+
+          <!-- All Fleet (Combined Telemetry) Card -->
+          <div id="side-card-all-fleet" class="card fleet-side-card active" onclick="selectAllEndpoints();" style="padding: 12px 14px; cursor: pointer; border: 1.5px solid var(--accent); background: var(--card-inner); border-radius: 8px; transition: all 0.2s ease;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="font-size: 17px;">🌐</span>
+                <div>
+                  <strong style="font-size: 13px; color: var(--accent);">All Fleet (Combined)</strong>
+                  <div style="font-size: 10.5px; color: var(--muted);" class="mono">Simultaneous Telemetry</div>
+                </div>
+              </div>
+              <span class="pill pill-primary" style="font-size: 9.5px; font-weight: 700;">ALL</span>
+            </div>
+            <div style="font-size: 11px; color: var(--muted); margin-top: 6px; line-height: 1.35;">
+              View aggregated logs across all connected host endpoints simultaneously.
+            </div>
+          </div>
+
+          <!-- Dynamic Individual Machine Cards -->
+          <div id="side-panel-machine-list" style="display: flex; flex-direction: column; gap: 10px;">
+            <!-- Populated dynamically via renderSidePanelEndpoints() -->
+          </div>
+        </div><!-- END RIGHT COLUMN -->
+
+      </div><!-- END 2-COLUMN DETAIL LAYOUT -->
 
     </main>
 
@@ -2197,7 +2269,7 @@
         showView('fleet');
         syncAll();
       }
-      renderMachineSelectorChips();
+      renderMachineSelectorChips(); renderSidePanelEndpoints(agentsList);
       renderFleetTable(agentsList);
       setInterval(syncAll, 3000);
       drawScreenFrame();
@@ -2236,6 +2308,15 @@
 
     function setDetailTab(tabId) {
       currentDetailTab = tabId;
+
+      if ((tabId === 'screen' || tabId === 'terminal' || tabId === 'dlp') && !currentAgent && agentsList && agentsList.length > 0) {
+        const defaultAgent = agentsList.find(a => a.status === 'ONLINE') || agentsList[0];
+        if (defaultAgent) {
+          selectAgent(defaultAgent.id, defaultAgent.host);
+          return;
+        }
+      }
+
       const tabs = ['overview', 'presence', 'alerts', 'processes', 'browser', 'screen', 'dlp', 'network', 'terminal'];
       tabs.forEach(t => {
         const btn = document.getElementById(`tab-btn-${t}`);
@@ -2291,7 +2372,7 @@
         pill.className = 'pill pill-success';
         pill.innerHTML = `<span class="dot online"></span> ${online} Online / ${agentsList.length} Total`;
       }
-      renderMachineSelectorChips();
+      renderMachineSelectorChips(); renderSidePanelEndpoints(agentsList);
       renderFleetTable(agentsList);
       renderEndpointsInventory(agentsList);
       syncLiveEvents();
@@ -2528,7 +2609,7 @@
         if (h) h.textContent = hostname;
       }
 
-      renderMachineSelectorChips();
+      renderMachineSelectorChips(); renderSidePanelEndpoints(agentsList);
       renderFleetTable(agentsList);
       renderEndpointsInventory(agentsList);
       showToast(`Selected endpoint: ${hostname}`);
@@ -3545,7 +3626,7 @@
         logLiveEvent(`agent uninstallation authorized: service deleted and removed from fleet`, 'warn');
         agentsList = agentsList.filter(a => a.id !== currentAgent);
         renderFleetTable(agentsList);
-        renderMachineSelectorChips();
+        renderMachineSelectorChips(); renderSidePanelEndpoints(agentsList);
         renderEndpointsInventory(agentsList);
         showView('fleet');
       } catch (err) {
@@ -3743,7 +3824,7 @@
         }
         renderEndpointsInventory(agentsList);
         renderFleetTable(agentsList);
-        renderMachineSelectorChips();
+        renderMachineSelectorChips(); renderSidePanelEndpoints(agentsList);
         if (typeof updateFleetKPIs === 'function') updateFleetKPIs(agentsList);
         if (currentAgent === agentId) {
           if (agentsList.length > 0) {
@@ -3890,7 +3971,7 @@
 
       // Render UI tables
       renderFleetTable(agentsList);
-      renderMachineSelectorChips();
+      renderMachineSelectorChips(); renderSidePanelEndpoints(agentsList);
       renderEndpointsInventory(agentsList);
 
       // Update selected agent status
@@ -4658,14 +4739,101 @@
         websiteTitle = t || browserName;
       }
 
+      const isChat = /slack|teams|discord|whatsapp|telegram|chatgpt|claude|gemini|skype|signal|zoom|meet/i.test(browserName) ||
+                     /slack|teams|discord|whatsapp|telegram|chatgpt|claude|gemini|skype|signal/i.test(t) ||
+                     /slack|teams|discord|whatsapp|telegram/i.test(baseName);
+
       return {
         rawTitle,
         websiteTitle: websiteTitle || 'Active Window',
         workspaceName,
         browserName,
         isBrowser,
-        isIncognito
+        isIncognito,
+        isChat
       };
+    }
+
+    
+    let currentBrowserSearch = '';
+
+    function searchBrowserView(val) {
+      currentBrowserSearch = (val || '').toLowerCase().trim();
+      renderBrowserTableRows();
+    }
+
+    function clearBrowserSearch() {
+      const inp = document.getElementById('browser-search-input');
+      if (inp) inp.value = '';
+      currentBrowserSearch = '';
+      renderBrowserTableRows();
+    }
+
+    function renderSidePanelEndpoints(agents) {
+      const container = document.getElementById('side-panel-machine-list');
+      const countEl = document.getElementById('side-panel-online-count');
+      const allFleetCard = document.getElementById('side-card-all-fleet');
+      if (!container) return;
+
+      const onlineCount = agents.filter(a => a.status === 'ONLINE').length;
+      if (countEl) countEl.textContent = `${onlineCount} Online`;
+
+      if (allFleetCard) {
+        allFleetCard.classList.toggle('active', !currentAgent);
+        const allTitle = allFleetCard.querySelector('strong');
+        if (allTitle) allTitle.style.color = !currentAgent ? 'var(--accent)' : 'var(--ink)';
+      }
+
+      if (!agents || agents.length === 0) {
+        container.innerHTML = `<div style="font-size: 12px; color: var(--muted); text-align: center; padding: 14px;">No endpoints registered</div>`;
+        return;
+      }
+
+      container.innerHTML = agents.map(a => {
+        const isOnline = a.status === 'ONLINE';
+        const isSelected = currentAgent === a.id;
+        return `
+          <div class="card fleet-side-card ${isSelected ? 'active' : ''}" 
+               style="padding: 12px 14px; border-left: 3.5px solid ${isOnline ? 'var(--success)' : '#777'}; display: flex; flex-direction: column; gap: 8px;"
+               onclick="selectAgent('${a.id}', '${a.host}');"
+               title="Switch to ${a.host}">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="font-size: 16px;">💻</span>
+                <div>
+                  <div style="font: 600 13px 'Space Grotesk', sans-serif; color: ${isSelected ? 'var(--accent)' : 'var(--ink)'}; line-height: 1.2;">
+                    ${escapeHtml(a.host)}
+                  </div>
+                  <div style="font-size: 11px; color: var(--muted);" class="mono">👤 ${escapeHtml(a.user || 'Akash.J')}</div>
+                </div>
+              </div>
+              <span class="pill ${isOnline ? 'pill-success' : 'pill-muted'}" style="font-size: 9px; padding: 2px 6px;">
+                <span class="dot ${isOnline ? 'online' : 'offline'}"></span>
+                ${a.status}
+              </span>
+            </div>
+
+            <div style="display: flex; justify-content: space-between; font-size: 11px; color: var(--muted);" class="mono">
+              <span>IP: ${escapeHtml(a.ip)}</span>
+              <span>${a.rtt || 1}ms</span>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 3px; font-size: 10.5px;">
+              <div style="display: flex; justify-content: space-between; color: var(--muted);">
+                <span>CPU:</span>
+                <strong>${a.cpu || 14}%</strong>
+              </div>
+              <div class="bar" style="width: 100%; height: 4px;"><i style="background: var(--success); width: ${a.cpu || 14}%;"></i></div>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 6px; margin-top: 2px;">
+              <button class="btn btn-sm" style="padding: 2px 7px; font-size: 10px;" onclick="event.stopPropagation(); openEndpointDrawer('${a.id}', '${a.host}');" title="Open full management drawer">
+                ⚙️ Manage
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
     }
 
     function filterBrowserView(filter) {
@@ -4674,6 +4842,7 @@
       document.getElementById('btn-browser-filter-web')?.classList.toggle('btn-primary', filter === 'WEB');
       document.getElementById('btn-browser-filter-apps')?.classList.toggle('btn-primary', filter === 'APPS');
       document.getElementById('btn-browser-filter-workspaces')?.classList.toggle('btn-primary', filter === 'WORKSPACES');
+      document.getElementById('btn-browser-filter-chat')?.classList.toggle('btn-primary', filter === 'CHAT');
       document.getElementById('btn-browser-filter-incognito')?.classList.toggle('btn-primary', filter === 'INCOGNITO');
       renderBrowserTableRows();
     }
@@ -4844,9 +5013,27 @@
         events = events.filter(e => !parseBrowserTitle(e.window_title, e.image_path).isBrowser);
       } else if (currentBrowserFilter === 'WORKSPACES') {
         events = events.filter(e => Boolean(parseBrowserTitle(e.window_title, e.image_path).workspaceName));
+      } else if (currentBrowserFilter === 'CHAT') {
+        events = events.filter(e => parseBrowserTitle(e.window_title, e.image_path).isChat);
       } else if (currentBrowserFilter === 'INCOGNITO') {
         events = events.filter(e => parseBrowserTitle(e.window_title, e.image_path).isIncognito);
       }
+
+      if (currentBrowserSearch) {
+        events = events.filter(e => {
+          const info = parseBrowserTitle(e.window_title, e.image_path);
+          const hostStr = (e.hostname || e.agent_id || '').toLowerCase();
+          return info.rawTitle.toLowerCase().includes(currentBrowserSearch) ||
+                 info.websiteTitle.toLowerCase().includes(currentBrowserSearch) ||
+                 info.workspaceName.toLowerCase().includes(currentBrowserSearch) ||
+                 info.browserName.toLowerCase().includes(currentBrowserSearch) ||
+                 hostStr.includes(currentBrowserSearch) ||
+                 String(e.process_id).includes(currentBrowserSearch);
+        });
+      }
+
+      const countBadge = document.getElementById('browser-table-count');
+      if (countBadge) countBadge.textContent = `Showing ${events.length} of ${currentBrowserEvents.length} events`;
 
       if (!events || events.length === 0) {
         tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--muted); padding: 2rem;">No matching window dwell events logged for current filter (${escapeHtml(currentBrowserFilter)}).</td></tr>`;

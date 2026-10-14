@@ -46,6 +46,7 @@ scratch_desktop.jpg
 certs/*.key
 certs/*.csr
 certs/*.srl
+server/certs/
 
 # OS and IDE files
 .DS_Store

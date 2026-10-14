@@ -127,17 +127,42 @@ func main() {
 
 	printStartupBanner(cfg)
 
-	// If TLS certificates exist, also launch HTTPS server on port 8443
+	// If TLS certificates exist, also launch an enterprise-grade hardened HTTPS server on port 8443
 	if _, err := os.Stat(cfg.TLSCertFile); err == nil {
 		if _, err := os.Stat(cfg.TLSKeyFile); err == nil {
 			httpsPort := "8443"
 			httpsAddr := ":" + httpsPort
-			go func() {
-				log.Printf("HTTPS secure dashboard listening on %s (TLS / OpenSSL)", httpsAddr)
-				if err := http.ListenAndServeTLS(httpsAddr, cfg.TLSCertFile, cfg.TLSKeyFile, withCORS(withNetworkPolicy(mux, &cfg))); err != nil {
-					log.Printf("https serve warning: %v", err)
+			tlsCert, err := tls.LoadX509KeyPair(cfg.TLSCertFile, cfg.TLSKeyFile)
+			if err == nil {
+				tlsConfig := &tls.Config{
+					Certificates: []tls.Certificate{tlsCert},
+					MinVersion:   tls.VersionTLS12,
+					CurvePreferences: []tls.CurveID{
+						tls.X25519,
+						tls.CurveP256,
+					},
+					PreferServerCipherSuites: true,
+					CipherSuites: []uint16{
+						tls.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
+						tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
+						tls.TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305,
+						tls.TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305,
+						tls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
+						tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
+					},
 				}
-			}()
+				httpsServer := &http.Server{
+					Addr:      httpsAddr,
+					Handler:   withSecurityHeaders(withCORS(withNetworkPolicy(mux, &cfg))),
+					TLSConfig: tlsConfig,
+				}
+				go func() {
+					log.Printf("🔒 OpenSSL TLS 1.3 / 1.2 Enterprise HTTPS listening on %s (HSTS & Strict Ciphers Enabled)", httpsAddr)
+					if err := httpsServer.ListenAndServeTLS("", ""); err != nil && err != http.ErrServerClosed {
+						log.Printf("https serve warning: %v", err)
+					}
+				}()
+			}
 		}
 	}
 
@@ -233,3 +258,15 @@ func printFirstRunBanner(password string) {
 	fmt.Println("   sign in, then add named accounts with scripts/create-user.sh")
 	fmt.Println(line)
 }
+
+func withSecurityHeaders(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
+		w.Header().Set("X-Content-Type-Options", "nosniff")
+		w.Header().Set("X-Frame-Options", "SAMEORIGIN")
+		w.Header().Set("X-XSS-Protection", "1; mode=block")
+		w.Header().Set("Referrer-Policy", "strict-origin-when-cross-origin")
+		next.ServeHTTP(w, r)
+	})
+}
+
